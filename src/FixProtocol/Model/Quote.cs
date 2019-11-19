@@ -1,16 +1,18 @@
-﻿namespace Intelligences.FixProtocol.Model
+﻿using Intelligences.FixProtocol.Enum;
+
+namespace Intelligences.FixProtocol.Model
 {
-    /// <summary>
-    /// 
-    /// </summary>
     public class Quote
     {
-        public decimal price;
-        public decimal volume;
-        public Quote(decimal price, decimal volume)
+        private decimal price;
+        private decimal volume;
+        private Direction direction;
+
+        public Quote(decimal price, decimal volume, Direction direction)
         {
             this.price = price;
             this.volume = volume;
+            this.direction = direction;
         }
 
         public decimal GetPrice()
@@ -21,6 +23,11 @@
         public decimal GetVolume()
         {
             return this.volume;
+        }
+
+        public Direction GetDirection()
+        {
+            return this.direction;
         }
     }
 }

@@ -87,6 +87,16 @@ namespace Intelligences.FixProtocol
         public event Action<Order> OrderChanged;
 
         /// <summary>
+        /// New my trade event
+        /// </summary>
+        public event Action<MyTrade> NewMyTrade;
+        
+        /// <summary>
+        /// Trades unsubscribed event
+        /// </summary>
+        public event Action<Security> TradesUnSubscribed;
+
+        /// <summary>
         /// FIX client
         /// </summary>
         private FIXClient fixClient;
@@ -122,6 +132,8 @@ namespace Intelligences.FixProtocol
             this.fixClient.NewTrade += this.newTrade;
             this.fixClient.NewOrder += this.newOrder;
             this.fixClient.OrderChanged += this.orderChanged;
+            this.fixClient.NewMyTrade += this.newMyTrade;
+            this.fixClient.TradesUnSubscribed += this.tradesUnSubscribed;
         }
 
         public void Dispose()
@@ -190,6 +202,19 @@ namespace Intelligences.FixProtocol
             {
                 this.fixClient.FindSecurities(securityFilter);
             }
+        }
+
+        /// <summary>
+        /// Load all securities
+        /// </summary>
+        internal void LoadAllSecurities()
+        {
+            if (!this.IsConnected())
+            {
+                throw new InvalidOperationException("Connection not established");
+            }
+
+            this.fixClient.LoadAllSecurities();
         }
 
         /// <summary>
@@ -264,6 +289,16 @@ namespace Intelligences.FixProtocol
         public void SubscribeOrdersUpdates()
         {
             this.fixClient.SubscribeOrdersUpdates();
+        }
+
+        public void SubscribeTrades(Security security)
+        {
+            this.fixClient.SubscribeTrades(security);
+        }
+
+        public void UnSubscribeTrades(Security security)
+        {
+            this.fixClient.UnSubscribeTrades(security);
         }
 
         private void newSecurity(Security security)
@@ -351,6 +386,11 @@ namespace Intelligences.FixProtocol
             this.NewTrade?.Invoke(trade);
         }
 
+        private void tradesUnSubscribed(Security security)
+        {
+            this.TradesUnSubscribed?.Invoke(security);
+        }
+
         private void newOrder(Order order)
         {
             this.NewOrder?.Invoke(order);
@@ -359,6 +399,11 @@ namespace Intelligences.FixProtocol
         private void orderChanged(Order order)
         {
             this.OrderChanged?.Invoke(order);
+        }
+
+        private void newMyTrade(MyTrade myTrade)
+        {
+            this.NewMyTrade?.Invoke(myTrade);
         }
     }
 }

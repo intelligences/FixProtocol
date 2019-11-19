@@ -62,22 +62,9 @@ namespace Intelligences.FixProtocol.Model
         /// Constructor.
         /// </summary>
         /// <param name="id"></param>
-        /// <param name="code"></param>
-        /// <param name="board"></param>
-        /// <param name="type"></param>
-        /// <param name="currency"></param>
-        /// <param name="priceStep"></param>
-        /// <param name="digits"></param>
-        public Security(string id, string code, string board, SecurityType type, string currency, decimal priceStep, decimal stepPrice, int digits)
+        public Security(string id)
         {
             this.id = id;
-            this.code = code;
-            this.board = board;
-            this.type = type;
-            this.currency = currency;
-            this.priceStep = priceStep;
-            this.stepPrice = stepPrice;
-            this.digits = digits;
         }
 
         public string GetId()
@@ -138,6 +125,42 @@ namespace Intelligences.FixProtocol.Model
         public OptionType? GetOptionType()
         {
             return this.optionType;
+        }
+
+
+        internal void SetCode(string code)
+        {
+            this.code = code;
+        }
+
+        internal void SetBoard(string board)
+        {
+            this.board = board;
+        }
+
+        internal void SetCurrency(string currency)
+        {
+            this.currency = currency;
+        }
+
+        internal void SetSecurityType(SecurityType type)
+        {
+            this.type = type;
+        }
+
+        internal void SetPriceStep(decimal priceStep)
+        {
+            this.priceStep = priceStep;
+        }
+
+        internal void SetStepPrice(decimal stepPrice)
+        {
+            this.stepPrice = stepPrice;
+        }
+
+        internal void SetDigits(int digits)
+        {
+            this.digits = digits;
         }
     }
 }

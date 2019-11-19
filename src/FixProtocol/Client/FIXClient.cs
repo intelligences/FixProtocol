@@ -1,19 +1,15 @@
-﻿using Intelligences.FixProtocol.Enum;
+﻿using ExecutionReport = QuickFix.FIX44.ExecutionReport;
+using Intelligences.FixProtocol.Client.Dialects;
+using Intelligences.FixProtocol.Enum;
 using Intelligences.FixProtocol.Fields;
 using Intelligences.FixProtocol.Filter;
 using Intelligences.FixProtocol.Model;
-using Intelligences.FixProtocol.Model.ConditionalOrders;
+using MarketDepth = Intelligences.FixProtocol.Model.MarketDepth;
 using QuickFix;
 using QuickFix.Fields;
-using QuickFix.FIX44;
 using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
 using System.Threading;
-using SecurityType = Intelligences.FixProtocol.Enum.SecurityType;
 using Tags = QuickFix.Fields.Tags;
-using TimeInForce = QuickFix.Fields.TimeInForce;
 
 namespace Intelligences.FixProtocol.Client
 {
@@ -30,6 +26,67 @@ namespace Intelligences.FixProtocol.Client
         internal event Action Disconnected;
 
         /// <summary>
+        /// New portfolio event
+        /// </summary>
+        internal event Action<Portfolio> NewPortfolio;
+
+        /// <summary>
+        /// Portfolio changed event
+        /// </summary>
+        internal event Action<Portfolio> PortfolioChanged;
+
+        /// <summary>
+        /// New position event
+        /// </summary>
+        internal event Action<Position> NewPosition;
+
+        /// <summary>
+        /// Position changed event
+        /// </summary>
+        internal event Action<Position> PositionChanged;
+
+        /// <summary>
+        /// New order event
+        /// </summary>
+        internal event Action<Order> NewOrder;
+
+        /// <summary>
+        /// Order changed event
+        /// </summary>
+        internal event Action<Order> OrderChanged;
+
+        /// <summary>
+        /// New my trade event
+        /// </summary>
+        internal event Action<MyTrade> NewMyTrade;
+
+        /// <summary>
+        /// New security event
+        /// </summary>
+        internal event Action<Security> NewSecurity;
+
+        /// <summary>
+        /// New Trade event
+        /// </summary>
+        internal event Action<Trade> NewTrade;
+
+        /// <summary>
+        /// Trades unsubscribed event
+        /// </summary>
+        internal event Action<Security> TradesUnSubscribed;
+
+        /// <summary>
+        /// Market depth changed
+        /// </summary>
+        internal event Action<MarketDepth> MarketDepthChanged;
+
+        /// <summary>
+        /// Market depth unsubscribed
+        /// </summary>
+        internal event Action<Security> MarketDepthUnsubscribed;
+
+
+        /// <summary>
         /// Событие ошибок
         /// </summary>
         internal event Action<Exception> OrderCancelFailed;
@@ -38,32 +95,6 @@ namespace Intelligences.FixProtocol.Client
         /// Событие ошибок
         /// </summary>
         internal event Action<Exception> OrderModifyFailed;
-
-        /// <summary>
-        /// Событие изменения стакана
-        /// </summary>
-        internal event Action<Model.MarketDepth> MarketDepthChanged;
-
-        internal event Action<Model.Security> MarketDepthUnsubscribed;
-
-        /// <summary>
-        /// Событие получения новой сделки
-        /// </summary>
-        internal event Action<Model.Trade> NewTrade;
-
-        /// <summary>
-        /// Событие получения нового инструмента
-        /// </summary>
-        internal event Action<Security> NewSecurity;
-
-        internal event Action<Portfolio> NewPortfolio;
-        internal event Action<Portfolio> PortfolioChanged;
-
-        internal event Action<Position> NewPosition;
-        internal event Action<Position> PositionChanged;
-
-        internal event Action<Order> NewOrder;
-        internal event Action<Order> OrderChanged;
 
         /// <summary>
         /// Настройки сессии
@@ -90,30 +121,39 @@ namespace Intelligences.FixProtocol.Client
         /// </summary>
         private int ordersUpdateInterval;
 
-        private readonly Dictionary<string, Model.MarketDepth> marketDepths = new Dictionary<string, Model.MarketDepth>();
-        private readonly Dictionary<string, Portfolio> portfolios = new Dictionary<string, Portfolio>();
-        private readonly Dictionary<string, int> loadedPositionsCount = new Dictionary<string, int>();
-        private readonly Dictionary<string, bool> isNewPortfolioInitialized = new Dictionary<string, bool>();
-        private readonly Dictionary<string, Order> pendingOrders = new Dictionary<string, Order>();
-        private readonly Dictionary<string, Order> orders = new Dictionary<string, Order>();
-
-        //private readonly Dictionary<string, Model.MarketDepth> marketDepths = new Dictionary<string, Model.MarketDepth>();
-
-        /// <summary>
-        /// Список инструментов
-        /// </summary>
-        private readonly Dictionary<string, Security> securities = new Dictionary<string, Security>();
-
-        private readonly string accountRequestId;
-
         private Timer portfolioUpdateTimer;
         private Timer ordersUpdateTimer;
-        private bool securityEventsAllowed = false;
+
+        private readonly IDialectClient client;
 
         public FIXClient(Model.Settings settings)
         {
             this.settings = settings;
-            this.accountRequestId = Guid.NewGuid().ToString();
+
+            Dialect dialect = this.settings.GetDialect();
+
+            switch(dialect)
+            {
+                case Dialect.Exante:
+                    this.client = new ExanteDialect(settings);
+                    break;
+                case Dialect.GainCapital:
+                    this.client = new GainCapitalDialect(settings);
+                    break;
+            }
+
+            this.client.NewPosition += this.newPosition;
+            this.client.PositionChanged += this.positionChanged;
+            this.client.NewPortfolio += this.newPortfolio;
+            this.client.PortfolioChanged += this.portfolioChanged;
+            this.client.NewOrder += this.newOrder;
+            this.client.OrderChanged += this.orderChanged;
+            this.client.NewMyTrade += this.newMyTrade;
+            this.client.NewSecurity += this.newSecurity;
+            this.client.NewTrade += this.newTrade;
+            this.client.TradesUnSubscribed += this.tradesUnSubscribed;
+            this.client.MarketDepthChanged += this.marketDepthChanged;
+            this.client.MarketDepthUnsubscribed += this.marketDepthUnsubscribed;
         }
 
         /// <summary>
@@ -138,7 +178,7 @@ namespace Intelligences.FixProtocol.Client
         }
 
         /// <summary>
-        /// Входящие сообещения
+        /// Input messages execution (Messages router)
         /// </summary>
         /// <param name="message"></param>
         /// <param name="sessionID"></param>
@@ -151,7 +191,7 @@ namespace Intelligences.FixProtocol.Client
 
                 if (msgType.getValue() == new MsgType("UASR").getValue())
                 {
-                    this.parseAccountSummaryResponse(message);
+                    this.client.ParseAccountSummaryResponse(message);
                     return;
                 }
                 else if (msgType.getValue() == new MsgType("UASJ").getValue())
@@ -170,13 +210,11 @@ namespace Intelligences.FixProtocol.Client
             }
         }
 
-        /// <summary>
-        /// Событие возникающее при создании нового подключения
-        /// </summary>
-        /// <param name="sessionID"></param>
         public void OnCreate(SessionID sessionID)
         {
             this.session = Session.LookupSession(sessionID);
+
+            this.client.SetSession(this.session);
         }
 
         /// <summary>
@@ -205,25 +243,26 @@ namespace Intelligences.FixProtocol.Client
         }
 
         /// <summary>
-        /// Исходящие сообщения
+        /// Output messages
         /// </summary>
         /// <param name="message"></param>
         /// <param name="sessionID"></param>
         public void ToAdmin(QuickFix.Message message, SessionID sessionID)
         {
+            this.client.PreOutputMessageAction(message);
+
             Dialect dialect = this.settings.GetDialect();
-
-            if (message.Header.GetField(Tags.MsgType) == MsgType.LOGON)
+            if (dialect == Dialect.GainCapital)
             {
-                string password = this.settings.GetProperty("Password");
-                
-                if (password != null)
+                if (message.Header.GetField(Tags.MsgType) == MsgType.LOGON)
                 {
-                    message.SetField(new Password(this.settings.GetProperty("Password")));
-                }
+                    string password = this.settings.GetProperty("Password");
 
-                if (dialect == Dialect.GainCapital)
-                {
+                    if (password != null)
+                    {
+                        message.SetField(new Password(this.settings.GetProperty("Password")));
+                    }
+
                     string uuid = this.settings.GetProperty("UUID");
 
                     if (uuid != null)
@@ -236,13 +275,14 @@ namespace Intelligences.FixProtocol.Client
 
         public void ToApp(QuickFix.Message message, SessionID sessionId)
         {
+            Console.WriteLine(message);
         }
 
         /// <summary>
-        /// Поллучение списка инструментов
+        /// Parse securities list
         /// </summary>
-        /// <param name="message"></param>
-        /// <param name="sessionID"></param>
+        /// <param name="message">FIX message</param>
+        /// <param name="sessionID">Session ID</param>
         public void OnMessage(QuickFix.FIX44.SecurityList message, SessionID sessionID)
         {
             string status = message.GetField(560);
@@ -252,11 +292,10 @@ namespace Intelligences.FixProtocol.Client
                 return;
             }
 
-            switch(this.settings.GetDialect())
+            this.client.ParseSecuritiesList(message);
+
+            switch (this.settings.GetDialect())
             {
-                case Dialect.Exante:
-                    this.onExanteRequest(message);
-                    break;
                 case Dialect.GainCapital:
                     this.onGainRequest(message);
                     break;
@@ -265,166 +304,78 @@ namespace Intelligences.FixProtocol.Client
 
         private void onGainRequest(QuickFix.FIX44.SecurityList message)
         {
-            NoRelatedSym numberOfSymbols = new NoRelatedSym();
-            SecurityList.NoRelatedSymGroup securityListGroup = new SecurityList.NoRelatedSymGroup();
+            //NoRelatedSym numberOfSymbols = new NoRelatedSym();
+            //SecurityList.NoRelatedSymGroup securityListGroup = new SecurityList.NoRelatedSymGroup();
 
-            message.GetField(numberOfSymbols);
+            //message.GetField(numberOfSymbols);
 
-            for (int i = 1; i <= numberOfSymbols.getValue(); i++)
-            {
-                message.GetGroup(i, securityListGroup);
+            //for (int i = 1; i <= numberOfSymbols.getValue(); i++)
+            //{
+            //    message.GetGroup(i, securityListGroup);
 
-                string baseSymbol = securityListGroup.Symbol.getValue(); // "ES"
-                string securityExchange = securityListGroup.SecurityExchange.getValue(); // "CME"
-                string securityDesc = securityListGroup.SecurityDesc.getValue(); // "E-Mini S&P"
-                decimal contractSize = securityListGroup.Factor.getValue(); // 50
-                string currency = securityListGroup.Currency.getValue(); // "USD"
-                string cficode = securityListGroup.CFICode.getValue(); // "FXXXXS"
-                string securityCode = securityListGroup.GetString(12059); // "ESZ19"
-                int expirationMonth = securityListGroup.GetInt(12071); // 12
-                decimal priceStep = securityListGroup.GetDecimal(969); // 0.25
-                decimal stepPrice = contractSize * priceStep; // 12.5
-                int digits = securityListGroup.GetInt(12063); // 2
-                DateTime expireTime = securityListGroup.GetDateTime(126); // 20200320-21:00:00.000
+            //    string baseSymbol = securityListGroup.Symbol.getValue(); // "ES"
+            //    string securityExchange = securityListGroup.SecurityExchange.getValue(); // "CME"
+            //    string securityDesc = securityListGroup.SecurityDesc.getValue(); // "E-Mini S&P"
+            //    decimal contractSize = securityListGroup.Factor.getValue(); // 50
+            //    string currency = securityListGroup.Currency.getValue(); // "USD"
+            //    string cficode = securityListGroup.CFICode.getValue(); // "FXXXXS"
+            //    string securityCode = securityListGroup.GetString(12059); // "ESZ19"
+            //    int expirationMonth = securityListGroup.GetInt(12071); // 12
+            //    decimal priceStep = securityListGroup.GetDecimal(969); // 0.25
+            //    decimal stepPrice = contractSize * priceStep; // 12.5
+            //    int digits = securityListGroup.GetInt(12063); // 2
+            //    DateTime expireTime = securityListGroup.GetDateTime(126); // 20200320-21:00:00.000
 
-                string securityId = securityCode + "@" + securityExchange;
+            //    string securityId = securityCode + "@" + securityExchange;
 
-                int countMargins = securityListGroup.GetInt(1643);
+            //    int countMargins = securityListGroup.GetInt(1643);
 
-                decimal initialMargin = 0;
-                decimal liquidatingMargin = 0;
+            //    decimal initialMargin = 0;
+            //    decimal liquidatingMargin = 0;
 
-                for (int j = 1; j <= countMargins; j++)
-                {
-                    Group noMarginAmtGroup = securityListGroup.GetGroup(j, 1643);
+            //    for (int j = 1; j <= countMargins; j++)
+            //    {
+            //        Group noMarginAmtGroup = securityListGroup.GetGroup(j, 1643);
 
-                    int marginAmtType = noMarginAmtGroup.GetInt(1644);
-                    decimal marginAmtValue = noMarginAmtGroup.GetDecimal(1645);
+            //        int marginAmtType = noMarginAmtGroup.GetInt(1644);
+            //        decimal marginAmtValue = noMarginAmtGroup.GetDecimal(1645);
 
-                    switch (marginAmtType)
-                    {
-                        case 11:
-                            initialMargin = marginAmtValue;
-                            break;
-                        case 12:
-                            liquidatingMargin = marginAmtValue;
-                            break;
-                    }
-                }
+            //        switch (marginAmtType)
+            //        {
+            //            case 11:
+            //                initialMargin = marginAmtValue;
+            //                break;
+            //            case 12:
+            //                liquidatingMargin = marginAmtValue;
+            //                break;
+            //        }
+            //    }
 
-                Security security = new Security(
-                    securityId,
-                    baseSymbol,
-                    securityExchange,
-                    cficode.ToSecurityType(),
-                    currency,
-                    priceStep,
-                    stepPrice,
-                    digits
-                );
+            //    Security security = new Security(
+            //        securityId
+            //    );
 
-                if (expireTime != null)
-                {
-                    security.SetExpiryDate(expireTime);
-                }
+            //    security.SetCode(baseSymbol);
+            //    security.SetBoard(securityExchange);
+            //    security.SetSecurityType(cficode.ToSecurityType());
+            //    security.SetCurrency(currency);
+            //    security.SetPriceStep(priceStep);
+            //    security.SetStepPrice(stepPrice);
+            //    security.SetDigits(digits);
 
-                this.securities.Add(securityId, security);
+            //    if (expireTime != null)
+            //    {
+            //        security.SetExpiryDate(expireTime);
+            //    }
 
-                this.NewSecurity(security);
-            }
-        }
+            //    this.securities.Add(securityId, security);
 
-        private void onExanteRequest(QuickFix.FIX44.SecurityList message)
-        {
-            NoRelatedSym numberOfSymbols = new NoRelatedSym();
-            SecurityList.NoRelatedSymGroup securityListGroup = new SecurityList.NoRelatedSymGroup();
+            //    if (this.internalSecurityRequests.Contains("24"))
+            //    {
 
-            message.GetField(numberOfSymbols);
-
-            for (int i = 1; i <= numberOfSymbols.getValue(); i++)
-            {
-                message.GetGroup(i, securityListGroup);
-
-                string securityId = securityListGroup.SecurityID.getValue(); // "ES.CME.H2020"
-
-                if (!this.securities.ContainsKey(securityId))
-                {
-                    string symbol = securityListGroup.Symbol.getValue(); // "ES"
-                    string securityExchange = securityListGroup.SecurityExchange.getValue(); // "CME"
-                    string currency = securityListGroup.Currency.getValue(); // "USD"
-                    string cficode = securityListGroup.CFICode.getValue(); // "FXXXXX"
-                    decimal contractSize = securityListGroup.ContractMultiplier.getValue(); // 50M
-                    decimal priceStep = 0; // 0.25M
-                    decimal minOrderPrice = 0; // 0.25M
-                    decimal lotSize = 0; // 1.0M
-                    DateTime? expiryDate = null; // {20.03.2020 0:00:00}
-                    decimal initialMargin = 0; // 6300.0M
-                    decimal maintenanceMargin = 0; // 6300.0M
-
-                    int attributesCount = securityListGroup.NoInstrAttrib.getValue();
-                    AllocationInstruction.NoInstrAttribGroup attributesGroup = new AllocationInstruction.NoInstrAttribGroup();
-
-                    for (int j = 1; j <= attributesCount; j++)
-                    {
-                        securityListGroup.GetGroup(j, attributesGroup);
-
-                        int attrKey = attributesGroup.InstrAttribType.getValue();
-                        string attrValue = attributesGroup.InstrAttribValue.getValue();
-
-                        switch (attrKey)
-                        {
-                            case 500:
-                                priceStep = decimal.Parse(attrValue, CultureInfo.InvariantCulture);
-                                break;
-                            case 501:
-                                initialMargin = decimal.Parse(attrValue, CultureInfo.InvariantCulture);
-                                break;
-                            case 502:
-                                maintenanceMargin = decimal.Parse(attrValue, CultureInfo.InvariantCulture);
-                                break;
-                            case 503:
-                                minOrderPrice = decimal.Parse(attrValue, CultureInfo.InvariantCulture);
-                                break;
-                            case 504:
-                                lotSize = decimal.Parse(attrValue, CultureInfo.InvariantCulture);
-                                break;
-                            case 505:
-                                expiryDate = DateTime.ParseExact(attrValue,
-                                    "yyyyMd",
-                                    CultureInfo.InvariantCulture,
-                                    DateTimeStyles.AssumeLocal
-                                );
-                                break;
-                        }
-                    }
-                    
-                    decimal stepPrice = contractSize * priceStep; // 12.5
-                    int digits = priceStep.PriceStepToNumderOfDigits();
-
-                    Security security = new Security(
-                        securityId, // "ES.CME.H2020"
-                        symbol, // "ES"
-                        securityExchange, // "CME"
-                        cficode.ToSecurityType(), // "FXXXXX" | security type
-                        currency, // "USD"
-                        priceStep, // 0.25M
-                        stepPrice,
-                        digits // 2
-                    );
-
-                    if (expiryDate != null)
-                    {
-                        security.SetExpiryDate(expiryDate);
-                    }
-
-                    this.securities.Add(securityId, security);
-                }
-
-                if (this.securities.TryGetValue(securityId, out Security output))
-                {
-                    this.NewSecurity(output);
-                }
-            }
+            //    }
+            //    this.NewSecurity(security);
+            //}
         }
 
         /// <summary>
@@ -432,124 +383,30 @@ namespace Intelligences.FixProtocol.Client
         /// </summary>
         internal void FindSecurities(SecurityFilter securityFilter)
         {
-            int requestType = SecurityListRequestType.ALL_SECURITIES;
-            string securityCode = securityFilter.Code;
-            SecurityType? securityType = securityFilter.Type;
-
-            if (securityCode != null)
-            {
-                requestType = SecurityListRequestType.SYMBOL;
-            }
-
-            if (securityType != null)
-            {
-                requestType = SecurityListRequestType.SECURITYTYPE_AND_OR_CFICODE;
-            }
-
-            QuickFix.FIX44.SecurityListRequest message = new QuickFix.FIX44.SecurityListRequest(
-                new SecurityReqID(Guid.NewGuid().ToString()),
-                new SecurityListRequestType(requestType)
-            );
-
-            if (securityCode != null)
-            {
-                message.Symbol = new Symbol(securityCode);
-            }
-
-            if (securityType != null)
-            {
-                message.CFICode = new CFICode(securityType.ToCFICode());
-            }
-
-            Session.SendToTarget(message, sessionID);
+            this.findSecuritiesRequest(securityFilter);
         }
 
         /// <summary>
-        /// Получение маркет данных
+        /// Load all securities
+        /// </summary>
+        internal void LoadAllSecurities()
+        {
+            this.findSecuritiesRequest(new SecurityFilter());
+        }
+
+        private void findSecuritiesRequest(SecurityFilter securityFilter)
+        {
+            this.client.FindSecurities(securityFilter);
+        }
+
+        /// <summary>
+        /// Parse market data
         /// </summary>
         /// <param name="message"></param>
         /// <param name="sessionID"></param>
         public void OnMessage(QuickFix.FIX44.MarketDataSnapshotFullRefresh message, SessionID sessionID)
         {
-            String mdKey = message.MDReqID.ToString();
-
-            if (!this.marketDepths.ContainsKey(mdKey))
-            {
-                return;
-            }
-
-            Model.MarketDepth marketDepth = this.marketDepths[mdKey];
-
-            int noMDEntries = message.NoMDEntries.getValue();
-            QuickFix.FIX44.MarketDataSnapshotFullRefresh.NoMDEntriesGroup group = new QuickFix.FIX44.MarketDataSnapshotFullRefresh.NoMDEntriesGroup();
-            MDEntryType mdEntryType = new MDEntryType();
-            MDEntryPx mdEntryPx = new MDEntryPx();
-            MDEntrySize mDEntrySize = new MDEntrySize();
-
-            Dictionary<decimal, decimal> bids = new Dictionary<decimal, decimal>();
-            Dictionary<decimal, decimal> asks = new Dictionary<decimal, decimal>();
-
-            for (int i = 1; i <= noMDEntries; i++)
-            {
-                message.GetGroup(i, group);
-                group.Get(mdEntryType);
-
-                try
-                {
-                    group.Get(mdEntryPx);
-                }
-                catch (Exception e) { }
-
-                try {
-                    group.Get(mDEntrySize);
-                } catch(Exception e) {  }
-
-                switch (mdEntryType.getValue())
-                {
-                    case MDEntryType.BID:
-                        decimal bid = mdEntryPx.getValue();
-                        decimal bidVolume = mDEntrySize.getValue();
-                        bids[bid] = bidVolume;
-                        break;
-                    case MDEntryType.OFFER:
-                        decimal ask = mdEntryPx.getValue();
-                        decimal askVolume = mDEntrySize.getValue();
-                        asks[ask] = askVolume;
-                        break;
-                    case MDEntryType.TRADE:
-                        this.NewTrade(new Trade(marketDepth.GetSecurity(), mdEntryPx.getValue(), mDEntrySize.getValue()));
-                        break;
-                    //case MDEntryType.OPENING_PRICE:
-                    //    Debug.WriteLine(mdEntryPx.getValue());
-                    //    break;
-                    //case MDEntryType.CLOSING_PRICE:
-                    //    Debug.WriteLine(mdEntryPx.getValue());
-                    //    break;
-                    //case MDEntryType.TRADE_VOLUME:
-                    //    Debug.WriteLine(mDEntrySize.getValue());
-                    //    break;
-                    //case MDEntryType.EMPTY_BOOK:
-                    //    Debug.WriteLine(mdEntryPx.getValue());
-                    //    break;
-                    //case 'x':
-                    //    Debug.WriteLine(mdEntryPx.getValue());
-                    //    break;
-                    //case 'y':
-                    //    Debug.WriteLine(mdEntryPx.getValue());
-                    //    break;
-                    //case 'z':
-                    //    Debug.WriteLine(mdEntryPx.getValue());
-                    //    break;
-                }
-            }
-
-            marketDepth.SetAsks(asks);
-            marketDepth.SetBids(bids);
-
-            if (asks.Count > 0 && bids.Count > 0)
-            {
-                this.MarketDepthChanged(marketDepth);
-            }
+            this.client.ParseMarketDataSnapshotFullRefresh(message);
         }
 
         public void OnMessage(QuickFix.FIX44.MarketDataRequest message, SessionID sessionID)
@@ -557,24 +414,9 @@ namespace Intelligences.FixProtocol.Client
             Console.WriteLine(message);
         }
 
-        /// <summary>
-        /// Сообщение об отклоненном запросе маркет данных
-        /// </summary>
-        /// <param name="message"></param>
-        /// <param name="sessionID"></param>
         public void OnMessage(QuickFix.FIX44.MarketDataRequestReject message, SessionID sessionID)
         {
-            string securityId = message.MDReqID.ToString();
-
-            if (this.marketDepths.ContainsKey(securityId))
-            {
-                this.marketDepths.Remove(securityId);
-
-                if (this.securities.TryGetValue(securityId, out Security output))
-                {
-                    this.MarketDepthUnsubscribed(output);
-                }
-            }
+            this.client.ParseMarketDataRequestReject(message);
         }
 
         public void OnMessage(QuickFix.FIX44.OrderCancelReject message, SessionID sessionID)
@@ -613,195 +455,23 @@ namespace Intelligences.FixProtocol.Client
         /// 
         /// </summary>
         /// <param name="execution"></param>
-        public void OnMessage(QuickFix.FIX44.ExecutionReport message, SessionID sessionID)
+        public void OnMessage(ExecutionReport message, SessionID sessionID)
         {
-            OrderID orderID = new OrderID();
-            message.GetField(orderID);
-
-            string orderId = orderID.getValue();
-
-            if (orderId != "NONE")
-            {
-                Order order;
-
-                ClOrdID clOrdID = new ClOrdID();
-                OrderQty orderQty = new OrderQty();
-                Side side = new Side();
-                Account account = new Account();
-                SecurityID securityID = new SecurityID();
-                OrdStatus ordStatus = new OrdStatus();
-                OrdType ordType = new OrdType();
-                Price priceField = new Price();
-
-                message.GetField(clOrdID);
-                message.GetField(orderQty);
-                message.GetField(side);
-                message.GetField(account);
-                message.GetField(securityID);
-                message.GetField(ordStatus);
-                message.GetField(ordType);
-
-                try
-                {
-                    message.GetField(priceField);
-                } catch (Exception e){}
-                
-                string clientOrderid = clOrdID.getValue();
-                string accountName = account.getValue();
-                string securityId = securityID.getValue();
-                OrderType orderType = ordType.ToOrderType();
-                OrderState orderState = ordStatus.ToOrderState();
-                decimal quantity = orderQty.getValue();
-                decimal price = priceField.getValue();
-
-                if (!this.portfolios.TryGetValue(accountName, out Portfolio portfolio))
-                {
-                    return;
-                }
-
-                if (!this.securities.TryGetValue(securityId, out Security security))
-                {
-                    //this.FindSecurities(new SecurityFilter() {
-                    //    Code = "ES"
-                    //});
-
-                    return;
-                }
-
-                order = this.findOrder(clientOrderid, orderId);
-
-                DateTime dateTime = message.Header.GetDateTime(52);
-
-                if (order == null)
-                {
-                    if (orderType == OrderType.Market)
-                    {
-                        order = new MarketOrder(
-                            quantity,
-                            side.ToDirection(),
-                            portfolio,
-                            security
-                        );
-                    }
-                    else
-                    {
-                        order = new LimitOrder(
-                            price,
-                            quantity,
-                            side.ToDirection(),
-                            portfolio,
-                            security
-                        );
-                    }
-
-                    order.SetTransactionId(Guid.NewGuid().ToString());
-                    order.SetClientOrderId(clientOrderid);
-                    order.SetState(OrderState.Pending);
-                }
-
-                order.SetOrderId(orderId);
-                order.SetQuantity(quantity);
-                order.SetPrice(price);
-                order.SetClientOrderId(clientOrderid);
-
-                if (!this.orders.ContainsKey(orderId))
-                {
-                    this.orders.Add(orderId, order);
-
-                    order.SetState(orderState);
-                    order.SetCreatedAt(dateTime);
-
-                    this.NewOrder(order);
-                }
-                else
-                {
-                    order.SetState(orderState);
-                    order.SetUpdatedAt(DateTimeOffset.UtcNow);
-
-                    this.OrderChanged(order);
-                }
-            }
+            this.client.ParseOrdersExecutionReport(message);
         }
 
-        private Order findOrder(string clientOrderId, string orderId)
-        {
-            Order order;
-
-            if (this.pendingOrders.TryGetValue(clientOrderId, out order))
-            {
-                this.pendingOrders.Remove(clientOrderId);
-
-                return order;
-            }
-
-            if (this.orders.TryGetValue(orderId, out order))
-            {
-                return order;
-            }
-
-            return null;
-        }
-
-        public void OnMessage(QuickFix.FIX44.NewOrderSingle ord, SessionID sessionID)
+        public void OnMessage(QuickFix.FIX44.NewOrderSingle message, SessionID sessionID)
         {
 
         }
 
         /// <summary>
-        /// Подписаться на стакан
+        /// Subscribe on MarketDepth
         /// </summary>
-        /// <param name="security"></param>
+        /// <param name="security">Security</param>
         internal void SubscribeMarketDepth(Security security)
         {
-            string securityId = security.GetId();
-
-            if (this.marketDepths.ContainsKey(securityId))
-            {
-                return;
-            }
-
-            QuickFix.FIX44.MarketDataRequest marketDataRequest = new QuickFix.FIX44.MarketDataRequest(
-                new MDReqID(securityId),
-                new SubscriptionRequestType(SubscriptionRequestType.SNAPSHOT_PLUS_UPDATES),
-                new QuickFix.Fields.MarketDepth()
-            );
-
-            marketDataRequest.Set(new MDUpdateType(MDUpdateType.FULL_REFRESH));
-            marketDataRequest.Set(new AggregatedBook(true));
-
-            QuickFix.FIX44.MarketDataRequest.NoMDEntryTypesGroup typesGroup = new QuickFix.FIX44.MarketDataRequest.NoMDEntryTypesGroup();
-            typesGroup.Set(new MDEntryType(MDEntryType.BID));
-            marketDataRequest.AddGroup(typesGroup);
-            typesGroup.Set(new MDEntryType(MDEntryType.OFFER));
-            marketDataRequest.AddGroup(typesGroup);
-            typesGroup.Set(new MDEntryType(MDEntryType.TRADE));
-            marketDataRequest.AddGroup(typesGroup);
-            //typesGroup.Set(new MDEntryType(MDEntryType.OPENING_PRICE));
-            //marketDataRequest.AddGroup(typesGroup);
-            //typesGroup.Set(new MDEntryType(MDEntryType.CLOSING_PRICE));
-            //marketDataRequest.AddGroup(typesGroup);
-            //typesGroup.Set(new MDEntryType(MDEntryType.TRADE_VOLUME));
-            //marketDataRequest.AddGroup(typesGroup);
-            //typesGroup.Set(new MDEntryType(MDEntryType.EMPTY_BOOK));
-            //marketDataRequest.AddGroup(typesGroup);
-            //typesGroup.Set(new MDEntryType('x')); // Price limit low
-            //marketDataRequest.AddGroup(typesGroup);
-            //typesGroup.Set(new MDEntryType('y')); // Price limit high
-            //marketDataRequest.AddGroup(typesGroup);
-            //No permissions for option data
-            //typesGroup.Set(new MDEntryType('z')); // Option data 
-            //marketDataRequest.AddGroup(typesGroup);
-
-            QuickFix.FIX44.MarketDataRequest.NoRelatedSymGroup symGroup = new QuickFix.FIX44.MarketDataRequest.NoRelatedSymGroup();
-            symGroup.Set(new SecurityIDSource("111"));
-            symGroup.Set(new SecurityID(securityId));
-            symGroup.Set(new Symbol(securityId));
-
-            marketDataRequest.AddGroup(symGroup);
-
-            this.marketDepths.Add(securityId, new Model.MarketDepth(security, 1));
-
-            Session.SendToTarget(marketDataRequest, this.sessionID);
+            this.client.SubscribeMarketDepth(security);
         }
 
         /// <summary>
@@ -810,324 +480,57 @@ namespace Intelligences.FixProtocol.Client
         /// <param name="security"></param>
         internal void UnsubscribeMarketDepth(Security security)
         {
-            string securityId = security.GetId();
-
-            if (!this.marketDepths.ContainsKey(securityId))
-            {
-                return;
-            }
-
-            QuickFix.FIX44.MarketDataRequest marketDataRequest = new QuickFix.FIX44.MarketDataRequest(
-                new MDReqID(securityId),
-                new SubscriptionRequestType(SubscriptionRequestType.DISABLE_PREVIOUS),
-                new QuickFix.Fields.MarketDepth()
-            );
-
-            QuickFix.FIX44.MarketDataRequest.NoMDEntryTypesGroup typesGroup = new QuickFix.FIX44.MarketDataRequest.NoMDEntryTypesGroup();
-            typesGroup.Set(new MDEntryType(MDEntryType.BID));
-            marketDataRequest.AddGroup(typesGroup);
-            typesGroup.Set(new MDEntryType(MDEntryType.OFFER));
-            marketDataRequest.AddGroup(typesGroup);
-            typesGroup.Set(new MDEntryType(MDEntryType.TRADE));
-            marketDataRequest.AddGroup(typesGroup);
-
-            QuickFix.FIX44.MarketDataRequest.NoRelatedSymGroup symGroup = new QuickFix.FIX44.MarketDataRequest.NoRelatedSymGroup();
-            symGroup.Set(new Symbol(securityId));
-
-            marketDataRequest.AddGroup(symGroup);
-
-            Session.SendToTarget(marketDataRequest, sessionID);
+            this.client.SubscribeMarketDepth(security);
         }
 
+        /// <summary>
+        /// Place new order on the exchange
+        /// </summary>
+        /// <param name="order">New order</param>
         internal void PlaceOrder(Order order)
         {
-            if (order is null)
-            {
-                throw new ArgumentNullException("Order can't be null");
-            }
-
-            Security security = order.GetSecurity();
-            string clientOrderId = order.GetClientOrderId();
-
-            NewOrderSingle newFixOrder = new NewOrderSingle(
-                new ClOrdID(clientOrderId),
-                new Symbol(security.GetId()),
-                new Side(order.GetDirection().ToFixOrderSide()),
-                new TransactTime(order.GetCreatedAt().DateTime),
-                new OrdType(order.GetOrderType().ToFixOrderType())
-            );
-
-            this.FillOrder(newFixOrder, order);
-
-            this.pendingOrders.Add(clientOrderId, order);
-
-            Session.SendToTarget(newFixOrder, this.sessionID);
+            this.client.PlaceOrder(order);
         }
 
+        /// <summary>
+        /// Modify order
+        /// </summary>
+        /// <param name="order">Order <see cref="Order"/></param>
         internal void ModifyOrder(Order order)
         {
-            if (order is null)
-            {
-                throw new ArgumentNullException("Order can't be null");
-            }
-
-            string clientOrderId = order.GetClientOrderId();
-            Security security = order.GetSecurity();
-            string securityId = security.GetId();
-
-            QuickFix.FIX44.OrderCancelReplaceRequest request = new QuickFix.FIX44.OrderCancelReplaceRequest(
-                new OrigClOrdID(clientOrderId),
-                new ClOrdID(Guid.NewGuid().ToString()),
-                new Symbol(securityId),
-                new Side(order.GetDirection().ToFixOrderSide()),
-                new TransactTime(order.GetCreatedAt().DateTime),
-                new OrdType(order.GetOrderType().ToFixOrderType())
-            );
-
-            FillOrder(request, order);
-
-            QuickFix.Session.SendToTarget(request, sessionID);
+            this.client.ModifyOrder(order);
         }
 
-        private void FillOrder(QuickFix.FIX44.Message newFixOrder, Order order)
-        {
-            Security security = order.GetSecurity();
-            string securityId = security.GetId();
-            Portfolio portfolio = order.GetPortfolio();
-
-            if (typeof(NewOrderSingle) == newFixOrder.GetType())
-            {
-                newFixOrder.SetField(new Account(portfolio.GetName()));
-                newFixOrder.SetField(new OrdType(order.GetOrderType().ToFixOrderType()));
-            }
-
-            newFixOrder.SetField(new OrderQty(order.GetQuantity()));
-
-            newFixOrder.SetField(new SecurityIDSource("111")); // TODO exante only
-            newFixOrder.SetField(new SecurityID(securityId));
-
-            if (order.GetPrice() != 0)
-            {
-                newFixOrder.SetField(new Price(order.GetPrice()));
-            }
-
-            if (order.GetOrderType() == OrderType.Limit)
-            {
-                newFixOrder.SetField(new Price(order.GetPrice()));
-            }
-            else if (order.GetOrderType() == OrderType.Conditional)
-            {
-                IOrderCondition condition = order.GetCondition();
-
-                if (condition.GetType() == typeof(StopLimit))
-                {
-                    StopLimit stopLimitCondition = (StopLimit)condition;
-                    newFixOrder.SetField(new StopPx(stopLimitCondition.GetPrice()));
-                }
-            }
-
-            newFixOrder.SetField(new TimeInForce(order.GetTimeInForce().ToFixTimeInForce())); ;
-        }
-
+        /// <summary>
+        /// Cancel order
+        /// </summary>
+        /// <param name="order">Order <see cref="Order"/></param>
         internal void CancelOrder(Order order)
         {
-            string clientOrderId = order.GetClientOrderId();
-            Security security = order.GetSecurity();
-            string securityId = security.GetId();
-
-            OrderCancelRequest cancelOrder = new OrderCancelRequest(
-                new OrigClOrdID(clientOrderId),
-                new ClOrdID(Guid.NewGuid().ToString()),
-                new Symbol(securityId),
-                new Side(order.GetDirection().ToFixOrderSide()),
-                new TransactTime(order.GetCreatedAt().DateTime)
-            );
-
-            cancelOrder.SetField(new SecurityIDSource("111")); // TODO exante only
-            cancelOrder.SetField(new SecurityID(securityId));
-            cancelOrder.SetField(new OrderQty(order.GetQuantity()));
-
-            Session.SendToTarget(cancelOrder, sessionID);
+            this.client.CancelOrder(order);
         }
 
-        private void requestPortfolio()
+        /// <summary>
+        /// Subscribe Trades
+        /// </summary>
+        /// <param name="security">Security <see cref="Security"/></param>
+        internal void SubscribeTrades(Security security)
         {
-            if (!this.IsConnected())
-            {
-                return;
-            }
+            this.client.SubscribeTrades(security);
+        }
 
-            if (this.settings.GetDialect() == Dialect.Exante)
-            {
-                QuickFix.Message message = new QuickFix.Message();
-                message.Header.SetField(new MsgType("UASQ"));
-
-                message.SetField(new AccSumReqID(this.accountRequestId));
-
-                Session.SendToTarget(message, sessionID);
-            }
+        /// <summary>
+        /// UnSubscribe Trades
+        /// </summary>
+        /// <param name="security">Security <see cref="Security"/></param>
+        internal void UnSubscribeTrades(Security security)
+        {
+            this.client.UnSubscribeTrades(security);
         }
 
         private void ordersUpdateRequest()
         {
-            if (!this.IsConnected())
-            {
-                return;
-            }
-
-            OrderMassStatusRequest message = new OrderMassStatusRequest(
-                new MassStatusReqID(Guid.NewGuid().ToString()),
-                new MassStatusReqType(MassStatusReqType.STATUS_FOR_ALL_ORDERS)
-            );
-
-            Session.SendToTarget(message, sessionID);
-        }
-
-        /// <summary>
-        /// Как только ордер будет изменен, кидаем его в событие
-        /// </summary>
-        private void onOrderChanged()
-        {
-
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="message"></param>
-        private void parseAccountSummaryResponse(QuickFix.Message message)
-        {
-            if (this.settings.GetDialect() == Dialect.Exante)
-            {
-                SecurityID securityIdField = new SecurityID();
-                LongQty longQtyField = new LongQty();
-                ShortQty shortQtyField = new ShortQty();
-                SecurityExchange securityExchangeField = new SecurityExchange();
-                Account accountField = new Account();
-                Symbol symbolField = new Symbol();
-                CFICode cfiCodeField = new CFICode();
-                TotalNetValue totalNetValueField = new TotalNetValue();
-
-                decimal profitAndLoss = 0;
-
-                string securityExchange = null;
-
-                try
-                {
-                    securityExchange = message.GetField(securityExchangeField).getValue();
-                }
-                catch (Exception e) { }
-
-                if (!String.IsNullOrEmpty(securityExchange))
-                {
-                    profitAndLoss = message.GetDecimal(20030);
-                }
-
-                int positionsCount = message.GetInt(20021);
-                string currency = message.GetString(20023);
-                decimal positionValue = message.GetDecimal(20032);
-                decimal usedMargin = message.GetDecimal(20040);
-
-
-                message.GetField(securityIdField);
-                message.GetField(longQtyField);
-                message.GetField(shortQtyField);
-                message.GetField(accountField);
-                message.GetField(symbolField);
-                message.GetField(cfiCodeField);
-                message.GetField(totalNetValueField);
-
-                string account = accountField.getValue();
-                decimal totalNetValue = totalNetValueField.getValue();
-                string securityId = securityIdField.getValue();
-                string symbol = symbolField.getValue();
-                string cfiCode = cfiCodeField.getValue();
-
-                if (!this.portfolios.ContainsKey(account))
-                {
-                    this.portfolios.Add(account, new Portfolio(account, totalNetValue));
-                    this.loadedPositionsCount.Add(account, 0);
-                    this.isNewPortfolioInitialized.Add(account, false);
-                }
-
-                //if (!this.securities.ContainsKey(securityId))
-                //{
-                //    this.FindSecurities(new SecurityFilter()
-                //    {
-                //        Code = securityId,
-                //        Type = cfiCode.ToSecurityType()
-                //    });
-                //}
-
-                this.loadedPositionsCount[account] += 1;
-
-                Portfolio portfolio = this.portfolios[account];
-
-                portfolio.SetUsedMargin(usedMargin);
-                portfolio.SetCurrentValue(totalNetValue);
-
-                decimal currentValue = 0;
-                decimal longQty = longQtyField.getValue();
-                decimal shortQty = shortQtyField.getValue();
-
-                if (longQty > 0)
-                {
-                    currentValue = longQty;
-                }
-
-                if (shortQty > 0)
-                {
-                    currentValue = -shortQty;
-                }
-
-                Position position = portfolio.GetPosition(securityId);
-
-                bool isNewPosition = false;
-                if (position == null)
-                {
-                    isNewPosition = true;
-                    position = new Position(portfolio, securityId, currentValue, currency);
-
-                    portfolio.AddPosition(position);
-
-                    this.NewPosition(position);
-                }
-
-                position = portfolio.GetPosition(securityId);
-
-                position.SetUpdatedAt(DateTimeOffset.UtcNow);
-                position.SetCurrentValue(currentValue);
-
-                if (isNewPosition == false)
-                {
-                    this.PositionChanged(position);
-                }
-
-                int loadedPositionsCount = this.loadedPositionsCount[account];
-                if (loadedPositionsCount != positionsCount)
-                {
-                    return;
-                }
-
-                if (this.isNewPortfolioInitialized.ContainsKey(account) && this.isNewPortfolioInitialized[account] == true)
-                {
-                    this.loadedPositionsCount[account] = 0;
-                    this.PortfolioChanged(this.portfolios[account]);
-                }
-                else
-                {
-                    this.loadedPositionsCount[account] = 0;
-                    this.isNewPortfolioInitialized[account] = true;
-                    this.NewPortfolio(this.portfolios[account]);
-
-                    // После загрузки портфеля запустим процесс получения заявок
-                    if (this.settings.IsTradeStream() == true)
-                    {
-                        this.ordersUpdateRequest();
-                        this.securityEventsAllowed = true;
-                    }
-                }
-            }
+            this.client.OrderMassStatusRequest();
         }
 
         internal void SubscribePortfolioUpdates()
@@ -1138,7 +541,7 @@ namespace Intelligences.FixProtocol.Client
             }
 
             this.portfolioUpdateTimer = new Timer(
-                new TimerCallback((state) => this.requestPortfolio()),
+                new TimerCallback((state) => this.client.AccountSummaryRequest()),
                 null,
                 0,
                 this.settings.GetPortfolioUpdateInterval() * 1000
@@ -1153,11 +556,71 @@ namespace Intelligences.FixProtocol.Client
             }
 
             this.ordersUpdateTimer = new Timer(
-                new TimerCallback((state) => this.ordersUpdateRequest()),
+                new TimerCallback((state) => this.client.OrderMassStatusRequest()),
                 null,
                 0,
                 this.settings.GetOrdersUpdateInterval() * 1000
             );
+        }
+
+        private void newPosition(Position position)
+        {
+            this.NewPosition?.Invoke(position);
+        }
+
+        private void positionChanged(Position position)
+        {
+            this.PositionChanged?.Invoke(position);
+        }
+
+        private void newPortfolio(Portfolio portfolio)
+        {
+            this.NewPortfolio?.Invoke(portfolio);
+        }
+
+        private void portfolioChanged(Portfolio portfolio)
+        {
+            this.PortfolioChanged?.Invoke(portfolio);
+        }
+
+        private void newOrder(Order order)
+        {
+            this.NewOrder?.Invoke(order);
+        }
+
+        private void orderChanged(Order order)
+        {
+            this.OrderChanged?.Invoke(order);
+        }
+
+        private void newMyTrade(MyTrade myTrade)
+        {
+            this.NewMyTrade?.Invoke(myTrade);
+        }
+
+        private void newSecurity(Security security)
+        {
+            this.NewSecurity?.Invoke(security);
+        }
+
+        private void newTrade(Trade trade)
+        {
+            this.NewTrade?.Invoke(trade);
+        }
+
+        private void tradesUnSubscribed(Security security)
+        {
+            this.TradesUnSubscribed?.Invoke(security);
+        }
+
+        private void marketDepthChanged(MarketDepth marketDepth)
+        {
+            this.MarketDepthChanged?.Invoke(marketDepth);
+        }
+
+        private void marketDepthUnsubscribed(Security security)
+        {
+            this.MarketDepthUnsubscribed?.Invoke(security);
         }
     }
 }

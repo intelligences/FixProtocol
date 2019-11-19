@@ -5,7 +5,6 @@
     /// </summary>
     public enum SecurityType
     {
-
         Forex,
 
         Stock,
@@ -18,6 +17,7 @@
 
         Fond,
 
-        Bond
+        Bond,
+        CalendarSpread,
     }
 }
