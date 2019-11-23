@@ -540,6 +540,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
 
             position.SetUpdatedAt(DateTimeOffset.UtcNow);
             position.SetCurrentValue(currentValue);
+            position.SetProfitAndLoss(profitAndLoss);
 
             if (isNewPosition == false)
             {

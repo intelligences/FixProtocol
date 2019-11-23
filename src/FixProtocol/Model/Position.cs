@@ -10,6 +10,7 @@ namespace Intelligences.FixProtocol.Model
         private readonly string currency;
         private decimal currentValue;
         private DateTimeOffset updatedAt;
+        private decimal? profitAndLoss;
 
         public Position(Portfolio portfolio, Security security, decimal beginValue, string currency)
         {
@@ -45,6 +46,11 @@ namespace Intelligences.FixProtocol.Model
             return this.currentValue;
         }
 
+        public decimal? GetProfitAndLoss()
+        {
+            return this.profitAndLoss;
+        }
+
         public DateTimeOffset GetUpdatedAt()
         {
             return this.updatedAt;
@@ -58,6 +64,11 @@ namespace Intelligences.FixProtocol.Model
         internal void SetUpdatedAt(DateTimeOffset updatedAt)
         {
             this.updatedAt = updatedAt;
+        }
+
+        internal void SetProfitAndLoss(decimal profitAndLoss)
+        {
+            this.profitAndLoss = profitAndLoss;
         }
     }
 }
