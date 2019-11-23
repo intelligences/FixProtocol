@@ -24,11 +24,11 @@
                     </StackPanel>
                     <StackPanel Orientation="Horizontal">
                         <Label Margin="0,0,26,0">Sender</Label>
-                        <TextBox x:Name="TradeStreamSender" MinWidth="120" Height="20" TextAlignment="Center" Text="FTD8044_TRADE_UAT"></TextBox>
+                        <TextBox x:Name="TradeStreamSender" MinWidth="120" Height="20" TextAlignment="Center" Text=""></TextBox>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal">
                         <Label Margin="0,0,13,0">Password</Label>
-                        <TextBox  x:Name="TradeStreamPassword" MinWidth="120" Height="20" TextAlignment="Center" Text="_OvW*MPY#l1M"></TextBox>
+                        <TextBox  x:Name="TradeStreamPassword" MinWidth="120" Height="20" TextAlignment="Center" Text=""></TextBox>
                     </StackPanel>
                 </StackPanel>
                 <StackPanel Orientation="Vertical">
@@ -39,11 +39,11 @@
                     </StackPanel>
                     <StackPanel Orientation="Horizontal">
                         <Label Margin="0,0,26,0">Sender</Label>
-                        <TextBox x:Name="MarketStreamSender" MinWidth="120" Height="20" TextAlignment="Center" Text="FTD8044_FEED_UAT"></TextBox>
+                        <TextBox x:Name="MarketStreamSender" MinWidth="120" Height="20" TextAlignment="Center" Text=""></TextBox>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal">
                         <Label Margin="0,0,13,0">Password</Label>
-                        <TextBox x:Name="MarketStreamPassword" MinWidth="120" Height="20" TextAlignment="Center" Text="_OvW*MPY#l1M"></TextBox>
+                        <TextBox x:Name="MarketStreamPassword" MinWidth="120" Height="20" TextAlignment="Center" Text=""></TextBox>
                     </StackPanel>
                 </StackPanel>
                 <StackPanel  Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,15,0,0">

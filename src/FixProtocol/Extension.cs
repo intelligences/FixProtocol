@@ -110,6 +110,9 @@ namespace Intelligences.FixProtocol
                 case "DBXXXX":
                     type = SecurityType.Bond;
                     break;
+                case "FMXXXX":
+                    type = SecurityType.CalendarSpread;
+                    break;
             }
 
             return (SecurityType) type;

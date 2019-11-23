@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Intelligences.FixProtocol.Model
@@ -16,25 +17,35 @@ namespace Intelligences.FixProtocol.Model
         /// <summary>
         /// Биды
         /// </summary>
-        private Dictionary<decimal, decimal> asks = new Dictionary<decimal, decimal>();
+        private List<Quote> asks = new List<Quote>();
 
         /// <summary>
         /// Аски
         /// </summary>
-        private Dictionary<decimal, decimal> bids = new Dictionary<decimal, decimal>();
+        private List<Quote> bids = new List<Quote>();
 
         /// <summary>
-        /// Глубина котировок
+        /// 
         /// </summary>
-        private int depth;
+        private Quote bestBid;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private Quote bestAsk;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private DateTimeOffset updatedAt;
 
         /// <summary>
         /// Конструктор.
         /// </summary>
-        public MarketDepth(Security security, int depth)
+        public MarketDepth(Security security, DateTimeOffset updatedAt)
         {
             this.security = security;
-            this.depth = depth;
+            this.updatedAt = updatedAt;
         }
 
         /// <summary>
@@ -46,20 +57,21 @@ namespace Intelligences.FixProtocol.Model
             return this.security;
         }
 
-        /// <summary>
-        /// Получить глубину
-        /// </summary>
-        /// <returns></returns>
-        public int GetDepth()
+        public DateTimeOffset GetUpdatedAt()
         {
-            return this.depth;
+            return this.updatedAt;
+        }
+
+        internal void SetUpdatedAt(DateTimeOffset updatedAt)
+        {
+            this.updatedAt = updatedAt;
         }
 
         /// <summary>
         /// Получить биды
         /// </summary>
         /// <returns></returns>
-        public Dictionary<decimal, decimal> GetBids()
+        public List<Quote> GetBids()
         {
             return this.bids;
         }
@@ -67,16 +79,18 @@ namespace Intelligences.FixProtocol.Model
         /// <summary>
         /// Установить биды
         /// </summary>
-        public void SetBids(Dictionary<decimal, decimal> bids)
+        public void SetBids(List<Quote> bids)
         {
-            this.bids = bids.OrderByDescending(x => x.Key).ToDictionary(x => x.Key, x => x.Value);
+            this.bids = bids.OrderByDescending(x => x.GetPrice()).ToList();
+
+            this.bestBid = this.bids.LastOrDefault();
         }
 
         /// <summary>
         /// Получить аски
         /// </summary>
         /// <returns></returns>
-        public Dictionary<decimal, decimal> GetAsks()
+        public List<Quote> GetAsks()
         {
             return this.asks;
         }
@@ -84,9 +98,11 @@ namespace Intelligences.FixProtocol.Model
         /// <summary>
         /// Установить аски
         /// </summary>
-        public void SetAsks(Dictionary<decimal, decimal> asks)
+        public void SetAsks(List<Quote> asks)
         {
-            this.asks = asks.OrderByDescending(x => x.Key).ToDictionary(x => x.Key, x => x.Value);
+            this.asks = asks.OrderByDescending(x => x.GetPrice()).ToList();
+
+            this.bestAsk = this.asks.LastOrDefault();
         }
     }
 }

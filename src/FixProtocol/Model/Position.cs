@@ -5,16 +5,16 @@ namespace Intelligences.FixProtocol.Model
     public class Position
     {
         private readonly Portfolio portfolio;
-        private readonly string securityCode;
+        private readonly Security security;
         private readonly decimal beginValue;
         private readonly string currency;
         private decimal currentValue;
         private DateTimeOffset updatedAt;
 
-        public Position(Portfolio portfolio, string securityCode, decimal beginValue, string currency)
+        public Position(Portfolio portfolio, Security security, decimal beginValue, string currency)
         {
             this.portfolio = portfolio;
-            this.securityCode = securityCode;
+            this.security = security;
             this.beginValue = beginValue;
             this.currency = currency;
             this.updatedAt = DateTimeOffset.UtcNow;
@@ -25,9 +25,9 @@ namespace Intelligences.FixProtocol.Model
             return this.portfolio;
         }
 
-        public string GetSecurityCode()
+        public Security GetSecurity()
         {
-            return this.securityCode;
+            return this.security;
         }
 
         public decimal GetBeginValue()

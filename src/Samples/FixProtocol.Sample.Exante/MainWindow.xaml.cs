@@ -139,6 +139,11 @@ namespace Intelligences.FixProtocol.Sample.Exante
                 //Debug.WriteLine("Position: {0}, {1}", position.GetSecurityCode(), position.GetCurrentValue());
             };
 
+            this.tradeStream.NewMyTrade += (MyTrade myTrade) =>
+            {
+                Debug.WriteLine("New my trade: {0}, {1}, {2}", myTrade.GetOrder().GetOrderId(), myTrade.GetTrade().GetPrice(), myTrade.GetTrade().GetVolume());
+            };
+
             // connection to feed stream
             this.tradeStream.Connected += () =>
             {
@@ -202,17 +207,16 @@ namespace Intelligences.FixProtocol.Sample.Exante
                     {
                         this.marketDepthList.Add(new MarketDepthView()
                         {
-                            Price = ask.Key,
-                            Ask = ask.Value,
+                            Price = ask.GetPrice(),
+                            Ask = ask.GetVolume(),
                         });
                     }
 
                     foreach (var bid in marketDepth.GetBids())
                     {
-                        this.marketDepthList.Add(new MarketDepthView()
-                        {
-                            Price = bid.Key,
-                            Bid = bid.Value,
+                        this.marketDepthList.Add(new MarketDepthView() {
+                            Price = bid.GetPrice(),
+                            Bid = bid.GetVolume(),
                         });
                     }
 

@@ -21,13 +21,13 @@ namespace Intelligences.FixProtocol.Sample.GainCapital
 
             Settings settings = new Settings(
                 "OEC_TEST",
-                 "SRashin8927",
+                 "",
                  "api.gainfutures.com",
                  9300,
                  Dialect.GainCapital
             );
 
-            settings.SetProperty("Password", "API29932");
+            settings.SetProperty("Password", "");
             settings.SetProperty("FastPort", 9301);
             settings.SetProperty("UUID", "9e61a8bc-0a31-4542-ad85-33ebab0e4e86");
             settings.SetProperty("DataDictionary", "Dictionaries/FIX44GainCapital.xml");
@@ -41,12 +41,11 @@ namespace Intelligences.FixProtocol.Sample.GainCapital
             {
                 Debug.WriteLine("FIX Connected !!!");
 
-                //this.connection.FindSecurities(new SecurityFilter()
-                //{
-                //    //Symbol = "esz9",
-                //    //Symbol = "TEST-RANDOM",
-                //    //Type = SecurityType.Future,
-                //});
+                this.connection.FindSecurities(new SecurityFilter()
+                {
+                    Code = "esz9",
+                    Type = SecurityType.Future,
+                });
             };
 
             this.connection.NewSecurity += (Security security) =>

@@ -12,7 +12,7 @@ namespace Intelligences.FixProtocol.Model
         private decimal currentValue;
 
 
-        private readonly Dictionary<string, Position> positions = new Dictionary<string, Position>();
+        private readonly Dictionary<Security, Position> positions = new Dictionary<Security, Position>();
 
         public Portfolio(string name, decimal beginValue)
         {
@@ -55,14 +55,14 @@ namespace Intelligences.FixProtocol.Model
             return this.positions.Values.ToList();
         }
 
-        internal Position GetPosition(string securityId)
+        internal Position GetPosition(Security security)
         {
-            if (!this.positions.ContainsKey(securityId))
+            if (!this.positions.ContainsKey(security))
             {
                 return null;
             }
 
-            return this.positions[securityId];
+            return this.positions[security];
         }
 
         internal void AddPosition(Position position)
@@ -72,14 +72,14 @@ namespace Intelligences.FixProtocol.Model
                 throw new ArgumentNullException("Argument is null");
             }
 
-            string code = position.GetSecurityCode();
+            Security security = position.GetSecurity();
 
-            if (this.positions.ContainsKey(code))
+            if (this.positions.ContainsKey(security))
             {
-                throw new ArgumentException("Invalid argument");
+                throw new InvalidOperationException("Position already exists");
             }
 
-            this.positions.Add(code, position);
+            this.positions.Add(security, position);
         }
     }
 }
