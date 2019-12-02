@@ -10,6 +10,7 @@ using QuickFix.Fields;
 using System;
 using System.Threading;
 using Tags = QuickFix.Fields.Tags;
+using System.Threading.Tasks;
 
 namespace Intelligences.FixProtocol.Client
 {
@@ -595,6 +596,12 @@ namespace Intelligences.FixProtocol.Client
 
         private void newMyTrade(MyTrade myTrade)
         {
+            Task.Factory.StartNew(() =>
+            {
+                Thread.Sleep(1500);
+                this.client.AccountSummaryRequest();
+            });
+
             this.NewMyTrade?.Invoke(myTrade);
         }
 
