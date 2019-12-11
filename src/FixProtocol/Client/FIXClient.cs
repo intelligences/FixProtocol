@@ -11,6 +11,7 @@ using System;
 using System.Threading;
 using Tags = QuickFix.Fields.Tags;
 using System.Threading.Tasks;
+using Intelligences.FixProtocol.DTO;
 
 namespace Intelligences.FixProtocol.Client
 {
@@ -209,6 +210,11 @@ namespace Intelligences.FixProtocol.Client
             {
                 throw new UnsupportedMessageType();
             }
+        }
+
+        internal void CreateSecurity(SecurityData securityData)
+        {
+            this.client.CreateSecurity(securityData);
         }
 
         public void OnCreate(SessionID sessionID)

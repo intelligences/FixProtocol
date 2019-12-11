@@ -19,6 +19,7 @@ using Intelligences.FixProtocol.Filter;
 using SecurityType = Intelligences.FixProtocol.Enum.SecurityType;
 using Intelligences.FixProtocol.Fields;
 using Tags = QuickFix.Fields.Tags;
+using Intelligences.FixProtocol.DTO;
 
 namespace Intelligences.FixProtocol.Client.Dialects
 {
@@ -319,6 +320,73 @@ namespace Intelligences.FixProtocol.Client.Dialects
             }
 
             Session.SendToTarget(message, this.session.SessionID);
+        }
+
+        public void CreateSecurity(SecurityData securityData)
+        {
+            if (securityData is null)
+            {
+                throw new ArgumentNullException("SecurityData can't be null");
+            }
+
+            string id = securityData.Id;
+            string code = securityData.Code;
+            string board = securityData.Board;
+            SecurityType type = securityData.Type;
+            string currency = securityData.Currency;
+            decimal priceStep = securityData.PriceStep;
+            decimal stepPrice = securityData.StepPrice;
+            DateTimeOffset? expiryDate = securityData.ExpiryDate;
+            int digits = securityData.Digits;
+
+            if (!this.securities.ContainsKey(id))
+            {
+                this.securities.Add(id, new Security(id));
+            }
+
+            Security security = this.securities[id];
+
+            if (code != default)
+            {
+                security.SetCode(code);
+            }
+
+            if (board != default)
+            {
+                security.SetBoard(board);
+            }
+
+            if (type != default)
+            {
+                security.SetSecurityType(type);
+            }
+
+            if (currency != default)
+            {
+                security.SetCurrency(currency);
+            }
+
+            if (priceStep != default)
+            {
+                security.SetPriceStep(priceStep);
+            }
+
+            if (stepPrice != default)
+            {
+                security.SetStepPrice(stepPrice);
+            }
+
+            if (expiryDate != null)
+            {
+                security.SetExpiryDate((DateTimeOffset) expiryDate);
+            }
+
+            if (digits != default)
+            {
+                security.SetDigits(digits);
+            }
+
+            this.NewSecurity(security);
         }
 
         /// <summary>
@@ -716,7 +784,6 @@ namespace Intelligences.FixProtocol.Client.Dialects
                 message.GetGroup(i, securityListGroup);
 
                 string securityId = securityListGroup.SecurityID.getValue(); // "ES.CME.H2020"
-
 
                 if (!this.securities.ContainsKey(securityId))
                 {

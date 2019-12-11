@@ -1,4 +1,5 @@
 ﻿using Intelligences.FixProtocol.Client;
+using Intelligences.FixProtocol.DTO;
 using Intelligences.FixProtocol.Enum;
 using Intelligences.FixProtocol.Factory;
 using Intelligences.FixProtocol.Filter;
@@ -202,6 +203,11 @@ namespace Intelligences.FixProtocol
             {
                 this.fixClient.FindSecurities(securityFilter);
             }
+        }
+
+        public void CreateSecurity(SecurityData securityData)
+        {
+            this.fixClient.CreateSecurity(securityData);
         }
 
         /// <summary>

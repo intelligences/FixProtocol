@@ -1,4 +1,5 @@
-﻿using Intelligences.FixProtocol.Filter;
+﻿using Intelligences.FixProtocol.DTO;
+using Intelligences.FixProtocol.Filter;
 using Intelligences.FixProtocol.Model;
 using QuickFix;
 using QuickFix.FIX44;
@@ -94,6 +95,11 @@ namespace Intelligences.FixProtocol.Client.Dialects
         }
 
         public void FindSecurities(SecurityFilter securityFilter)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void CreateSecurity(SecurityData securityData)
         {
             throw new NotImplementedException();
         }

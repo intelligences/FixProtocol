@@ -45,6 +45,10 @@ namespace Intelligences.FixProtocol.Model
         /// </summary>
         private bool isTradeStream;
 
+        //private bool useCacheForSecuritiesList;
+
+        //private TimeSpan cacheUpdateTime;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -176,6 +180,26 @@ namespace Intelligences.FixProtocol.Model
         {
             return this.properties;
         }
+
+        //public bool isUseCacheForSecuritiesList()
+        //{
+        //    return this.useCacheForSecuritiesList;
+        //}
+
+        //public void UseCacheForSecuritiesList()
+        //{
+        //    this.useCacheForSecuritiesList = true;
+        //}
+
+        //public TimeSpan GetCacheUpdateTime()
+        //{
+        //    return this.cacheUpdateTime;
+        //}
+
+        //public void SetCacheUpdateTime(TimeSpan timeSpan)
+        //{
+        //    this.cacheUpdateTime = timeSpan;
+        //}
 
         private bool checkRequiredFields(List<string> keys)
         {

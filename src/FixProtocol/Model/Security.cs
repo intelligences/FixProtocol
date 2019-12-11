@@ -46,7 +46,7 @@ namespace Intelligences.FixProtocol.Model
         /// <summary>
         /// Expiration date
         /// </summary>
-        private DateTime? expiryDate;
+        private DateTimeOffset? expiryDate;
 
         /// <summary>
         /// Type of option (only for <see cref="SecurityType.Option"/> type of security)
@@ -107,12 +107,12 @@ namespace Intelligences.FixProtocol.Model
             return this.digits;
         }
 
-        public DateTime? GetExpiryDate()
+        public DateTimeOffset? GetExpiryDate()
         {
             return this.expiryDate;
         }
 
-        public void SetExpiryDate(DateTime? dateTime)
+        public void SetExpiryDate(DateTimeOffset? dateTime)
         {
             this.expiryDate = dateTime;
         }
@@ -126,7 +126,6 @@ namespace Intelligences.FixProtocol.Model
         {
             return this.optionType;
         }
-
 
         internal void SetCode(string code)
         {

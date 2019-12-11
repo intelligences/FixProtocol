@@ -6,6 +6,7 @@ using MarketDataRequestReject = QuickFix.FIX44.MarketDataRequestReject;
 using System;
 using SecurityList = QuickFix.FIX44.SecurityList;
 using QuickFix;
+using Intelligences.FixProtocol.DTO;
 
 namespace Intelligences.FixProtocol.Client.Dialects
 {
@@ -99,6 +100,8 @@ namespace Intelligences.FixProtocol.Client.Dialects
         /// </summary>
         /// <param name="securityFilter">Security filter <see cref="SecurityFilter"/></param>
         void FindSecurities(SecurityFilter securityFilter);
+
+        void CreateSecurity(SecurityData securityData);
 
         /// <summary>
         /// Subscribe Trades
