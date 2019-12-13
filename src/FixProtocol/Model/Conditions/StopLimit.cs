@@ -1,4 +1,4 @@
-﻿namespace Intelligences.FixProtocol.Model.ConditionalOrders
+﻿namespace Intelligences.FixProtocol.Model.Conditions
 {
     /// <summary>
     /// Stop limit order condition

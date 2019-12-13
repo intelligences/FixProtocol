@@ -12,7 +12,6 @@ using SecurityList = QuickFix.FIX44.SecurityList;
 using System;
 using System.Collections.Generic;
 using Intelligences.FixProtocol.Enum;
-using Intelligences.FixProtocol.Model.ConditionalOrders;
 using TimeInForce = QuickFix.Fields.TimeInForce;
 using System.Globalization;
 using Intelligences.FixProtocol.Filter;
@@ -20,6 +19,7 @@ using SecurityType = Intelligences.FixProtocol.Enum.SecurityType;
 using Intelligences.FixProtocol.Fields;
 using Tags = QuickFix.Fields.Tags;
 using Intelligences.FixProtocol.DTO;
+using Intelligences.FixProtocol.Model.Conditions;
 
 namespace Intelligences.FixProtocol.Client.Dialects
 {
@@ -337,7 +337,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
             decimal priceStep = securityData.PriceStep;
             decimal stepPrice = securityData.StepPrice;
             DateTimeOffset? expiryDate = securityData.ExpiryDate;
-            int digits = securityData.Digits;
+            int digits = securityData.Decimals;
 
             if (!this.securities.ContainsKey(id))
             {
@@ -1058,14 +1058,8 @@ namespace Intelligences.FixProtocol.Client.Dialects
             }
 
             newFixOrder.SetField(new OrderQty(order.GetQuantity()));
-
             newFixOrder.SetField(new SecurityIDSource("111")); // TODO exante only
             newFixOrder.SetField(new SecurityID(securityId));
-
-            if (order.GetPrice() != 0)
-            {
-                newFixOrder.SetField(new Price(order.GetPrice()));
-            }
 
             if (order.GetOrderType() == OrderType.Limit)
             {
@@ -1077,7 +1071,15 @@ namespace Intelligences.FixProtocol.Client.Dialects
 
                 if (condition.GetType() == typeof(StopLimit))
                 {
+                    newFixOrder.SetField(new Price(order.GetPrice()));
+
                     StopLimit stopLimitCondition = (StopLimit)condition;
+                    newFixOrder.SetField(new StopPx(stopLimitCondition.GetPrice()));
+                }
+
+                if (condition.GetType() == typeof(StopMarket))
+                {
+                    StopMarket stopLimitCondition = (StopMarket)condition;
                     newFixOrder.SetField(new StopPx(stopLimitCondition.GetPrice()));
                 }
             }

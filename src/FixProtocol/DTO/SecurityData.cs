@@ -21,6 +21,6 @@ namespace Intelligences.FixProtocol.DTO
 
         public DateTimeOffset? ExpiryDate { get; set; }
 
-        public int Digits { get; set; }
+        public int Decimals { get; set; }
     }
 }
