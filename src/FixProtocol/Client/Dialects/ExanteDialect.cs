@@ -267,12 +267,14 @@ namespace Intelligences.FixProtocol.Client.Dialects
             Security security = order.GetSecurity();
             string clientOrderId = order.GetClientOrderId();
 
+            order.SetCreatedAt(DateTimeOffset.UtcNow);
+
             QuickFix.FIX44.NewOrderSingle newFixOrder = new QuickFix.FIX44.NewOrderSingle(
                 new ClOrdID(clientOrderId),
                 new Symbol(security.GetId()),
                 new Side(order.GetDirection().ToFixOrderSide()),
                 new TransactTime(order.GetCreatedAt().DateTime),
-                new OrdType(order.GetOrderType().ToFixOrderType())
+                new OrdType(order.GetFixOrderType())
             );
 
             this.fillOrderProperties(newFixOrder, order);
@@ -454,7 +456,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
                 new Symbol(securityId),
                 new Side(order.GetDirection().ToFixOrderSide()),
                 new TransactTime(order.GetCreatedAt().DateTime),
-                new OrdType(order.GetOrderType().ToFixOrderType())
+                new OrdType(order.GetFixOrderType())
             );
 
             this.fillOrderProperties(request, order);
@@ -493,6 +495,11 @@ namespace Intelligences.FixProtocol.Client.Dialects
         /// </summary>
         public void OrderMassStatusRequest()
         {
+            if (this.session.IsLoggedOn == false)
+            {
+                return;
+            }
+
             QuickFix.FIX44.OrderMassStatusRequest message = new QuickFix.FIX44.OrderMassStatusRequest(
                 new MassStatusReqID(Guid.NewGuid().ToString()),
                 new MassStatusReqType(MassStatusReqType.STATUS_FOR_ALL_ORDERS)
@@ -506,6 +513,11 @@ namespace Intelligences.FixProtocol.Client.Dialects
         /// </summary>
         public void AccountSummaryRequest()
         {
+            if (this.session.IsLoggedOn == false)
+            {
+                return;
+            }
+
             QuickFix.Message message = new QuickFix.Message();
             message.Header.SetField(new MsgType("UASQ"));
 
@@ -1054,7 +1066,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
             if (typeof(QuickFix.FIX44.NewOrderSingle) == newFixOrder.GetType())
             {
                 newFixOrder.SetField(new Account(portfolio.GetName()));
-                newFixOrder.SetField(new OrdType(order.GetOrderType().ToFixOrderType()));
+                newFixOrder.SetField(new OrdType(order.GetFixOrderType()));
             }
 
             newFixOrder.SetField(new OrderQty(order.GetQuantity()));

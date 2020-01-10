@@ -1,5 +1,6 @@
 ﻿using Intelligences.FixProtocol.Enum;
 using Intelligences.FixProtocol.Model;
+using Intelligences.FixProtocol.Model.Conditions;
 using QuickFix.Fields;
 using System;
 using System.Globalization;
@@ -178,8 +179,10 @@ namespace Intelligences.FixProtocol
         
 
 
-        public static char ToFixOrderType(this OrderType orderType)
+        public static char GetFixOrderType(this Order order)
         {
+            OrderType orderType = order.GetOrderType();
+
             char ordType = OrdType.LIMIT;
 
             switch (orderType)
@@ -190,9 +193,23 @@ namespace Intelligences.FixProtocol
                 case OrderType.Limit:
                     ordType = OrdType.LIMIT;
                     break;
-                //case OrderType.Stop:
-                //    ordType = new OrdType(OrdType.STOP);
-                //    break;
+                case OrderType.Conditional:
+                    Type type = order.GetCondition().GetType();
+
+                    if (type == typeof(StopMarket))
+                    {
+                        ordType = OrdType.STOP;
+                    }
+                    else if (type == typeof(StopLimit))
+                    {
+                        ordType = OrdType.STOP_LIMIT;
+                    }
+                    else
+                    {
+                        throw new ArgumentException("Invalid order type for fix protocol");
+                    }
+
+                    break;
             }
 
             return ordType;
