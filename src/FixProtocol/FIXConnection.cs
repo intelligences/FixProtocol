@@ -88,6 +88,16 @@ namespace Intelligences.FixProtocol
         public event Action<Order> OrderChanged;
 
         /// <summary>
+        /// Событие ошибок
+        /// </summary>
+        public event Action<Exception> OrderCancelFailed;
+
+        /// <summary>
+        /// Событие ошибок
+        /// </summary>
+        public event Action<Exception> OrderModifyFailed;
+
+        /// <summary>
         /// New my trade event
         /// </summary>
         public event Action<MyTrade> NewMyTrade;
@@ -135,6 +145,8 @@ namespace Intelligences.FixProtocol
             this.fixClient.OrderChanged += this.orderChanged;
             this.fixClient.NewMyTrade += this.newMyTrade;
             this.fixClient.TradesUnSubscribed += this.tradesUnSubscribed;
+            this.fixClient.OrderCancelFailed += this.orderCancelFailed;
+            this.fixClient.OrderModifyFailed += this.orderModifyFailed;
         }
 
         public void Dispose()
@@ -410,6 +422,16 @@ namespace Intelligences.FixProtocol
         private void newMyTrade(MyTrade myTrade)
         {
             this.NewMyTrade?.Invoke(myTrade);
+        }
+
+        private void orderCancelFailed(Exception exception)
+        {
+            this.OrderCancelFailed?.Invoke(exception);
+        }
+
+        private void orderModifyFailed(Exception exception)
+        {
+            this.OrderModifyFailed?.Invoke(exception);
         }
     }
 }

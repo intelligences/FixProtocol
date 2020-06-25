@@ -87,7 +87,6 @@ namespace Intelligences.FixProtocol.Client
         /// </summary>
         internal event Action<Security> MarketDepthUnsubscribed;
 
-
         /// <summary>
         /// Событие ошибок
         /// </summary>

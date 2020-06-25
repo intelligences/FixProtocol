@@ -331,7 +331,6 @@ namespace Intelligences.FixProtocol.Client.Dialects
                 throw new ArgumentNullException("SecurityData can't be null");
             }
 
-            string id = securityData.Id;
             string code = securityData.Code;
             string board = securityData.Board;
             SecurityType type = securityData.Type;
@@ -341,12 +340,12 @@ namespace Intelligences.FixProtocol.Client.Dialects
             DateTimeOffset? expiryDate = securityData.ExpiryDate;
             int digits = securityData.Decimals;
 
-            if (!this.securities.ContainsKey(id))
+            if (!this.securities.ContainsKey(code))
             {
-                this.securities.Add(id, new Security(id));
+                this.securities.Add(code, new Security(code));
             }
 
-            Security security = this.securities[id];
+            Security security = this.securities[code];
 
             if (code != default)
             {

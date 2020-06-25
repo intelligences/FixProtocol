@@ -5,8 +5,6 @@ namespace Intelligences.FixProtocol.DTO
 {
     public class SecurityData
     {
-        public string Id { get; set; }
-
         public string Code { get; set; }
 
         public string Board { get; set; }
