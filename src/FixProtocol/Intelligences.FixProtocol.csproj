@@ -5,7 +5,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <AssemblyName>Intelligences.FixProtocol</AssemblyName>
     <RootNamespace>Intelligences.FixProtocol</RootNamespace>
-    <Version>1.0.4.7</Version>
+    <Version>1.0.4.8</Version>
     <Description>Fix protocol implimentation library.
 
 Supported brokers:
@@ -51,9 +51,6 @@ Supported brokers:
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Dictionaries\FIX44Exante(clone).xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <None Update="Dictionaries\FIX44GainCapital.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

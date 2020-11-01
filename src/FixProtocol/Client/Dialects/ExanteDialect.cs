@@ -20,6 +20,7 @@ using Intelligences.FixProtocol.Fields;
 using Tags = QuickFix.Fields.Tags;
 using Intelligences.FixProtocol.DTO;
 using Intelligences.FixProtocol.Model.Conditions;
+using Intelligences.FixProtocol.Exceptions;
 
 namespace Intelligences.FixProtocol.Client.Dialects
 {
@@ -54,6 +55,21 @@ namespace Intelligences.FixProtocol.Client.Dialects
         /// Order changed event
         /// </summary>
         public event Action<Order> OrderChanged;
+
+        /// <summary>
+        /// Order place failed event
+        /// </summary>
+        public event Action<OrderFail> OrderPlaceFailed;
+
+        /// <summary>
+        /// Order cancel failed event
+        /// </summary>
+        internal event Action<OrderFail> OrderCancelFailed;
+
+        /// <summary>
+        /// Order modify failed event
+        /// </summary>
+        internal event Action<OrderFail> OrderModifyFailed;
 
         /// <summary>
         /// New my trade event
@@ -677,7 +693,8 @@ namespace Intelligences.FixProtocol.Client.Dialects
                 Price priceField = new Price();
                 LastPx lastPx = new LastPx();
                 LastQty lastQty = new LastQty();
-
+                Text text = new Text();
+                ExanteOrdRejReason exanteOrdRejReason = new ExanteOrdRejReason();
 
                 message.GetField(clOrdID);
                 message.GetField(orderQty);
@@ -686,7 +703,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
                 message.GetField(securityID);
                 message.GetField(ordStatus);
                 message.GetField(ordType);
-
+              
                 if (message.IsSetPrice())
                 {
                     message.GetField(priceField);
@@ -755,6 +772,14 @@ namespace Intelligences.FixProtocol.Client.Dialects
                 order.SetPrice(price);
                 order.SetClientOrderId(clientOrderid);
 
+                if (orderState == OrderState.Failed)
+                {
+                    message.GetField(text);
+                    message.GetField(exanteOrdRejReason);
+
+                    this.OrderPlaceFailed(new OrderFail(order, new OrderException(text.ToString())));
+                }
+
                 if (!this.orders.ContainsKey(orderId))
                 {
                     this.orders.Add(orderId, order);
@@ -785,6 +810,18 @@ namespace Intelligences.FixProtocol.Client.Dialects
         /// <param name="message">Fix message</param>
         public void ParseSecuritiesList(SecurityList message)
         {
+            string status = message.GetField(560);
+
+            if (status == "2")
+            {
+                //Debug.WriteLine("No instruments found that match selection criteria");
+            }
+
+            if (status != "0")
+            {
+                return;
+            }
+
             NoRelatedSym numberOfSymbols = new NoRelatedSym();
             SecurityList.NoRelatedSymGroup securityListGroup = new SecurityList.NoRelatedSymGroup();
 
@@ -1008,6 +1045,65 @@ namespace Intelligences.FixProtocol.Client.Dialects
                     this.MarketDepthUnsubscribed(output);
                 }
             }
+        }
+
+        public void OrderCancelReject(QuickFix.FIX44.OrderCancelReject message)
+        {
+            OrderID orderID = new OrderID();
+            message.GetField(orderID);
+
+            string orderId = orderID.getValue();
+
+            if (orderId != "NONE")
+            {
+                ClOrdID clOrdID = new ClOrdID();
+
+                message.GetField(clOrdID);
+
+                string clientOrderid = clOrdID.getValue();
+
+                Order order = this.findOrder(clientOrderid, orderId);
+
+                if (order != null)
+                {
+                    Text text = new Text();
+                    CxlRejReason cxlRejReason = new CxlRejReason();
+
+                    message.GetField(text);
+                    message.GetField(cxlRejReason);
+
+                    this.OrderPlaceFailed(new OrderFail(order, new OrderException(text.ToString())));
+                }
+            }
+        }
+
+        public void OrderCancelReplaceRequest(QuickFix.FIX44.OrderCancelReplaceRequest message)
+        {
+            OrderID orderID = new OrderID();
+            message.GetField(orderID);
+
+            string orderId = orderID.getValue();
+
+            if (orderId != "NONE")
+            {
+                ClOrdID clOrdID = new ClOrdID();
+
+                message.GetField(clOrdID);
+
+                string clientOrderid = clOrdID.getValue();
+
+                Order order = this.findOrder(clientOrderid, orderId);
+
+                if (order != null)
+                {
+                    Text text = new Text();
+
+                    message.GetField(text);
+
+                    this.OrderModifyFailed(new OrderFail(order, new OrderException(text.ToString())));
+                }
+            }
+
         }
 
         #region PrivateMethods

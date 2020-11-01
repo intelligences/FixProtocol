@@ -18,6 +18,7 @@
         public const int MarginAmtField = 1645;
 
         public const int AccSumReqID = 20020;
+        public const int ExanteOrdRejReason = 103;
 
     }
 }

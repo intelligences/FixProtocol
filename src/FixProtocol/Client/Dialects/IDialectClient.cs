@@ -43,6 +43,11 @@ namespace Intelligences.FixProtocol.Client.Dialects
         event Action<Order> OrderChanged;
 
         /// <summary>
+        /// Order place failed event
+        /// </summary>
+        event Action<OrderFail> OrderPlaceFailed;
+
+        /// <summary>
         /// New my trade event
         /// </summary>
         event Action<MyTrade> NewMyTrade;
@@ -172,5 +177,9 @@ namespace Intelligences.FixProtocol.Client.Dialects
         /// </summary>
         /// <param name="message">FIX message</param>
         void ParseMarketDataRequestReject(MarketDataRequestReject message);
+
+        void OrderCancelReject(QuickFix.FIX44.OrderCancelReject rejectResponse);
+
+        void OrderCancelReplaceRequest(QuickFix.FIX44.OrderCancelReplaceRequest rejectResponse);
     }
 }

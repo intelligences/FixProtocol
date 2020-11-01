@@ -7,12 +7,11 @@ using Intelligences.FixProtocol.Model;
 using QuickFix;
 using QuickFix.Transport;
 using System;
-using System.Diagnostics;
 
 namespace Intelligences.FixProtocol
 {
     /// <summary>
-    /// 
+    /// FIX Connection
     /// </summary>
     public class FIXConnection : IConnectionProtocol, IDisposable
     {
@@ -90,12 +89,17 @@ namespace Intelligences.FixProtocol
         /// <summary>
         /// Событие ошибок
         /// </summary>
-        public event Action<Exception> OrderCancelFailed;
+        public event Action<OrderFail> OrderPlaceFailed;
 
         /// <summary>
         /// Событие ошибок
         /// </summary>
-        public event Action<Exception> OrderModifyFailed;
+        public event Action<OrderFail> OrderCancelFailed;
+
+        /// <summary>
+        /// Событие ошибок
+        /// </summary>
+        public event Action<OrderFail> OrderModifyFailed;
 
         /// <summary>
         /// New my trade event
@@ -145,7 +149,8 @@ namespace Intelligences.FixProtocol
             this.fixClient.OrderChanged += this.orderChanged;
             this.fixClient.NewMyTrade += this.newMyTrade;
             this.fixClient.TradesUnSubscribed += this.tradesUnSubscribed;
-            this.fixClient.OrderCancelFailed += this.orderCancelFailed;
+            this.fixClient.OrderPlaceFailed += this.orderPlaceFailed;
+            this.fixClient.OrderCancelFailed += this.orderCancelFailed; 
             this.fixClient.OrderModifyFailed += this.orderModifyFailed;
         }
 
@@ -183,7 +188,7 @@ namespace Intelligences.FixProtocol
             }
             catch (Exception e)
             {
-                Debug.WriteLine(e.Message);
+                //Debug.WriteLine(e.Message);
             }
         }
 
@@ -424,14 +429,19 @@ namespace Intelligences.FixProtocol
             this.NewMyTrade?.Invoke(myTrade);
         }
 
-        private void orderCancelFailed(Exception exception)
+        private void orderPlaceFailed(OrderFail orderFail)
         {
-            this.OrderCancelFailed?.Invoke(exception);
+            this.OrderPlaceFailed?.Invoke(orderFail);
         }
 
-        private void orderModifyFailed(Exception exception)
+        private void orderCancelFailed(OrderFail orderFail)
         {
-            this.OrderModifyFailed?.Invoke(exception);
+            this.OrderCancelFailed?.Invoke(orderFail);
+        }
+
+        private void orderModifyFailed(OrderFail orderFail)
+        {
+            this.OrderModifyFailed?.Invoke(orderFail);
         }
     }
 }

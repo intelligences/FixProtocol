@@ -90,12 +90,17 @@ namespace Intelligences.FixProtocol.Client
         /// <summary>
         /// Событие ошибок
         /// </summary>
-        internal event Action<Exception> OrderCancelFailed;
+        internal event Action<OrderFail> OrderPlaceFailed;
 
         /// <summary>
         /// Событие ошибок
         /// </summary>
-        internal event Action<Exception> OrderModifyFailed;
+        internal event Action<OrderFail> OrderCancelFailed;
+
+        /// <summary>
+        /// Событие ошибок
+        /// </summary>
+        internal event Action<OrderFail> OrderModifyFailed;
 
         /// <summary>
         /// Настройки сессии
@@ -155,6 +160,7 @@ namespace Intelligences.FixProtocol.Client
             this.client.TradesUnSubscribed += this.tradesUnSubscribed;
             this.client.MarketDepthChanged += this.marketDepthChanged;
             this.client.MarketDepthUnsubscribed += this.marketDepthUnsubscribed;
+            this.client.OrderPlaceFailed += this.orderPlaceFailed;
         }
 
         /// <summary>
@@ -291,19 +297,13 @@ namespace Intelligences.FixProtocol.Client
         /// <param name="sessionID">Session ID</param>
         public void OnMessage(QuickFix.FIX44.SecurityList message, SessionID sessionID)
         {
-            string status = message.GetField(560);
-
-            if (status != "0")
-            {
-                return;
-            }
-
-            this.client.ParseSecuritiesList(message);
-
             switch (this.settings.GetDialect())
             {
                 case Dialect.GainCapital:
                     this.onGainRequest(message);
+                    break;
+                case Dialect.Exante:
+                    this.client.ParseSecuritiesList(message);
                     break;
             }
         }
@@ -427,32 +427,26 @@ namespace Intelligences.FixProtocol.Client
 
         public void OnMessage(QuickFix.FIX44.OrderCancelReject message, SessionID sessionID)
         {
-            OrdStatus ordStatus = new OrdStatus();
-            message.GetField(ordStatus);
-
-            switch(ordStatus.ToOrderState())
+            switch (this.settings.GetDialect())
             {
-                case OrderState.Filled:
-                    this.OrderCancelFailed(new Exception("Order already filled"));
-                    break;
-                case OrderState.Canceled:
-                    this.OrderCancelFailed(new Exception("Order already canceled"));
+                //case Dialect.GainCapital:
+                //    this.client.OrderCancelReject(message);
+                //    break;
+                case Dialect.Exante:
+                    this.client.OrderCancelReject(message);
                     break;
             }
         }
 
         public void OnMessage(QuickFix.FIX44.OrderCancelReplaceRequest message, SessionID sessionID)
         {
-            OrdStatus ordStatus = new OrdStatus();
-            message.GetField(ordStatus);
-
-            switch (ordStatus.ToOrderState())
+            switch (this.settings.GetDialect())
             {
-                case OrderState.Filled:
-                    this.OrderModifyFailed(new Exception("Order already filled"));
-                    break;
-                case OrderState.Canceled:
-                    this.OrderModifyFailed(new Exception("Order already canceled"));
+                //case Dialect.GainCapital:
+                //    this.OrderCancelRejectForGain(message);
+                //    break;
+                case Dialect.Exante:
+                    this.client.OrderCancelReplaceRequest(message);
                     break;
             }
         }
@@ -633,6 +627,11 @@ namespace Intelligences.FixProtocol.Client
         private void marketDepthUnsubscribed(Security security)
         {
             this.MarketDepthUnsubscribed?.Invoke(security);
+        }
+
+        private void orderPlaceFailed(OrderFail orderFail)
+        {
+            this.OrderPlaceFailed.Invoke(orderFail);
         }
     }
 }

@@ -40,6 +40,11 @@ namespace Intelligences.FixProtocol.Client.Dialects
         public event Action<Order> OrderChanged;
 
         /// <summary>
+        /// Order place failed event
+        /// </summary>
+        public event Action<OrderFail> OrderPlaceFailed;
+
+        /// <summary>
         /// New my trade event
         /// </summary>
         public event Action<MyTrade> NewMyTrade;
@@ -167,6 +172,16 @@ namespace Intelligences.FixProtocol.Client.Dialects
         public void UnSubscribeTrades(Security security)
         {
             throw new NotImplementedException();
+        }
+
+        public void OrderCancelReject(QuickFix.FIX44.OrderCancelReject rejectResponse)
+        {
+
+        }
+
+        public void OrderCancelReplaceRequest(QuickFix.FIX44.OrderCancelReplaceRequest rejectResponse)
+        {
+
         }
     }
 }
