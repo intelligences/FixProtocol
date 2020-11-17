@@ -353,6 +353,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
             string currency = securityData.Currency;
             decimal priceStep = securityData.PriceStep;
             decimal stepPrice = securityData.StepPrice;
+            decimal volumeStep = securityData.VolumeStep;
             DateTimeOffset? expiryDate = securityData.ExpiryDate;
             int digits = securityData.Decimals;
 
@@ -401,6 +402,11 @@ namespace Intelligences.FixProtocol.Client.Dialects
             if (digits != default)
             {
                 security.SetDigits(digits);
+            }
+
+            if (volumeStep != default)
+            {
+                security.SetVolumeStep(volumeStep);
             }
 
             this.NewSecurity(security);
@@ -903,6 +909,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
                     security.SetPriceStep(priceStep);
                     security.SetStepPrice(stepPrice);
                     security.SetDigits(digits);
+                    security.SetVolumeStep(lotSize);
 
                     if (expiryDate != null)
                     {

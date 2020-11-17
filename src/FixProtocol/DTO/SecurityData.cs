@@ -17,6 +17,8 @@ namespace Intelligences.FixProtocol.DTO
 
         public decimal StepPrice { get; set; }
 
+        public decimal VolumeStep { get; set; }
+
         public DateTimeOffset? ExpiryDate { get; set; }
 
         public int Decimals { get; set; }

@@ -44,6 +44,11 @@ namespace Intelligences.FixProtocol.Model
         private decimal stepPrice;
 
         /// <summary>
+        /// Minimal step of volume
+        /// </summary>
+        private decimal volumeStep;
+
+        /// <summary>
         /// Expiration date
         /// </summary>
         private DateTimeOffset? expiryDate;
@@ -107,6 +112,11 @@ namespace Intelligences.FixProtocol.Model
             return this.digits;
         }
 
+        public decimal GetVolumeStep()
+        {
+            return this.volumeStep;
+        }
+
         public DateTimeOffset? GetExpiryDate()
         {
             return this.expiryDate;
@@ -160,6 +170,11 @@ namespace Intelligences.FixProtocol.Model
         internal void SetDigits(int digits)
         {
             this.digits = digits;
+        }
+
+        internal void SetVolumeStep(decimal volumeStep)
+        {
+            this.volumeStep = volumeStep;
         }
     }
 }
