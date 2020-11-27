@@ -114,6 +114,9 @@ namespace Intelligences.FixProtocol
                 case "FMXXXX":
                     type = SecurityType.CalendarSpread;
                     break;
+                case "MMXXXX":
+                    type = SecurityType.Swap;
+                    break;
             }
 
             return (SecurityType) type;

@@ -18,6 +18,9 @@
         Fond,
 
         Bond,
+
         CalendarSpread,
+
+        Swap,
     }
 }
