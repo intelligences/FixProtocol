@@ -182,11 +182,6 @@ namespace Intelligences.FixProtocol.Client.Dialects
         {
             string securityId = security.GetId();
 
-            if (this.marketDepths.ContainsKey(securityId))
-            {
-                return;
-            }
-
             QuickFix.FIX44.MarketDataRequest marketDataRequest = new QuickFix.FIX44.MarketDataRequest(
                 new MDReqID(securityId),
                 new SubscriptionRequestType(SubscriptionRequestType.SNAPSHOT_PLUS_UPDATES),
@@ -229,7 +224,10 @@ namespace Intelligences.FixProtocol.Client.Dialects
 
             marketDataRequest.AddGroup(symGroup);
 
-            this.marketDepths.Add(securityId, new Model.MarketDepth(security, DateTimeOffset.UtcNow));
+            if (!this.marketDepths.ContainsKey(securityId))
+            {
+                this.marketDepths.Add(securityId, new Model.MarketDepth(security, DateTimeOffset.UtcNow));
+            }
 
             Session.SendToTarget(marketDataRequest, this.session.SessionID);
         }
@@ -425,12 +423,10 @@ namespace Intelligences.FixProtocol.Client.Dialects
 
             string securityId = security.GetId();
 
-            if (this.tradeSubscriptions.Contains(securityId))
+            if (!this.tradeSubscriptions.Contains(securityId))
             {
-                throw new InvalidOperationException("Trades subscription already eexists");
+                this.tradeSubscriptions.Add(securityId);
             }
-
-            this.tradeSubscriptions.Add(securityId);
         }
 
         /// <summary>
@@ -803,6 +799,11 @@ namespace Intelligences.FixProtocol.Client.Dialects
                     if (orderState == OrderState.PartialFilled || orderState == OrderState.Filled)
                     {
                         this.NewMyTrade(new MyTrade(new Trade(security, lastPrice, lastQuantity, dateTime), order));
+                    }
+
+                    if (orderState == OrderState.Filled || orderState == OrderState.Failed || orderState == OrderState.Canceled)
+                    {
+                        this.orders.Remove(orderId);
                     }
 
                     this.OrderChanged(order);
