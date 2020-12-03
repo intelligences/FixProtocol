@@ -679,9 +679,6 @@ namespace Intelligences.FixProtocol.Client.Dialects
             OrderID orderID = new OrderID();
             message.GetField(orderID);
 
-            MsgSeqNum seqNum = new MsgSeqNum();
-            message.Header.GetField(seqNum);
-
             string orderId = orderID.getValue();
 
             if (orderId != "NONE")
