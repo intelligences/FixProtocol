@@ -45,6 +45,11 @@ namespace Intelligences.FixProtocol.Model
         /// </summary>
         private bool isTradeStream;
 
+        /// <summary>
+        /// Is logs enabled
+        /// </summary>
+        private bool isLoggingEnabled;
+
         //private bool useCacheForSecuritiesList;
 
         //private TimeSpan cacheUpdateTime;
@@ -65,6 +70,7 @@ namespace Intelligences.FixProtocol.Model
             this.portfolioUpdateInterval = 60;
             this.ordersUpdateInterval = 60;
             this.isTradeStream = false;
+            this.isLoggingEnabled = false;
 
             this.SetProperty("BeginString", "FIX4.4");
 
@@ -80,8 +86,10 @@ namespace Intelligences.FixProtocol.Model
             this.SetProperty("StartTime", "22:00:00");
             this.SetProperty("EndTime", "22:00:00");
             this.SetProperty("ResetOnLogon", "Y");
+            this.SetProperty("ResetOnLogout", "N");
+            this.SetProperty("ResetOnDisconnect", "N");
             this.SetProperty("CheckLatency", "N");
-            this.SetProperty("UseDataDictionary", "N");
+            this.SetProperty("UseDataDictionary", "Y");
             this.SetProperty("DataDictionary", "Dictionaries/FIX44.xml");
             this.SetProperty("FileStorePath", "FIX\\Files");
             this.SetProperty("FileLogPath", "FIX\\Log");
@@ -117,6 +125,7 @@ namespace Intelligences.FixProtocol.Model
         public void TradeStream()
         {
             this.isTradeStream = true;
+            this.SetProperty("ResetOnLogon", "N");
         }
 
         public string GetFastTemplatePatch()
@@ -212,6 +221,21 @@ namespace Intelligences.FixProtocol.Model
         internal bool IsTradeStream()
         {
             return this.isTradeStream;
+        }
+
+        internal bool IsLoggingEnabled()
+        {
+            return this.isLoggingEnabled;
+        }
+
+        public void EnableLogging()
+        {
+            this.isLoggingEnabled = true;
+        }
+
+        public void DisableLogging()
+        {
+            this.isLoggingEnabled = false;
         }
     }
 }

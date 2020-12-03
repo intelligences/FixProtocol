@@ -99,6 +99,7 @@ namespace Intelligences.FixProtocol.Sample.Exante
             settings.SetPortfolioUpdateInterval(20);
             settings.SetOrdersUpdateInterval(20);
             settings.TradeStream();
+            settings.SetProperty("ResetOnLogon", "N");
 
             this.tradeStream = new FIXConnection(settings);
 
@@ -150,7 +151,7 @@ namespace Intelligences.FixProtocol.Sample.Exante
                 this.changeConnectBtnText("Disconnect");
 
                 Debug.WriteLine("FIX Feed stream Connected !!!");
-                this.marketDataStream.Connect();
+               // this.marketDataStream.Connect();
                 this.tradeStream.SubscribePortfolioUpdates();
                 this.tradeStream.SubscribeOrdersUpdates();
             };

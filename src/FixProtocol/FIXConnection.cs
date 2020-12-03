@@ -127,13 +127,24 @@ namespace Intelligences.FixProtocol
 
             this.fixClient = new FIXClient(settings);
 
-            this.socketInitiator = new SocketInitiator(
-                this.fixClient,
-                new FileStoreFactory(sessionSettings),
-                sessionSettings,
-                new FileLogFactory(sessionSettings),
-                new DefaultMessageFactory()
-            );
+            if (settings.IsLoggingEnabled())
+            {
+                this.socketInitiator = new SocketInitiator(
+                    this.fixClient,
+                    new FileStoreFactory(sessionSettings),
+                    sessionSettings,
+                    new FileLogFactory(sessionSettings),
+                    new DefaultMessageFactory()
+                );
+            }
+            else
+            {
+                this.socketInitiator = new SocketInitiator(
+                    this.fixClient,
+                    new FileStoreFactory(sessionSettings),
+                    sessionSettings
+                );
+            }
 
             this.fixClient.Connected += this.connected;
             this.fixClient.Disconnected += this.disconnected;
