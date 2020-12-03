@@ -938,6 +938,11 @@ namespace Intelligences.FixProtocol.Client.Dialects
                 if (password != null)
                 {
                     message.SetField(new Password(this.settings.GetProperty("Password")));
+
+                    if (this.settings.IsTradeStream())
+                    {
+                        message.SetField(new ResetSeqNumFlag(ResetSeqNumFlag.NO));
+                    }
                 }
             }
         }

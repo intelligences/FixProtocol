@@ -5,13 +5,13 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <AssemblyName>Intelligences.FixProtocol</AssemblyName>
     <RootNamespace>Intelligences.FixProtocol</RootNamespace>
-    <Version>1.0.4.11</Version>
+    <Version>1.0.4.12</Version>
     <Description>Fix protocol implimentation library.
 
 Supported brokers:
   - Exante</Description>
-    <AssemblyVersion>1.0.4.11</AssemblyVersion>
-    <FileVersion>1.0.4.11</FileVersion>
+    <AssemblyVersion>1.0.4.12</AssemblyVersion>
+    <FileVersion>1.0.4.12</FileVersion>
     <Company>Intelligences</Company>
     <PackageProjectUrl>https://github.com/intelligences/FixProtocol</PackageProjectUrl>
     <RepositoryUrl>https://github.com/intelligences/FixProtocol</RepositoryUrl>
@@ -26,11 +26,11 @@ Supported brokers:
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.6">
+    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="3.3.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.CSharp" Version="4.6.0" />
+    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageReference Include="OpenFAST" Version="1.0.0" />
     <PackageReference Include="QuickFix.Net.NetStandard" Version="1.7.9" />
   </ItemGroup>
