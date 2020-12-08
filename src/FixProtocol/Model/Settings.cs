@@ -81,10 +81,10 @@ namespace Intelligences.FixProtocol.Model
 
             this.SetProperty("ReconnectInterval", 30);
             this.SetProperty("HeartBtInt", 30);
-            this.SetProperty("StartDay", "SUN");
-            this.SetProperty("EndDay", "SUN");
-            this.SetProperty("StartTime", "22:00:00");
-            this.SetProperty("EndTime", "22:00:00");
+            //this.SetProperty("StartDay", "SUN");
+            //this.SetProperty("EndDay", "SUN");
+            //this.SetProperty("StartTime", "22:00:00");
+            //this.SetProperty("EndTime", "22:00:00");
             this.SetProperty("ResetOnLogon", "Y");
             this.SetProperty("ResetOnLogout", "N");
             this.SetProperty("ResetOnDisconnect", "N");
