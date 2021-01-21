@@ -199,7 +199,7 @@ namespace Intelligences.FixProtocol
             }
             catch (Exception e)
             {
-                //Debug.WriteLine(e.Message);
+                this.ConnectionError(e);
             }
         }
 
