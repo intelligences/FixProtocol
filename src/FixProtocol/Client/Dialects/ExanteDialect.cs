@@ -660,13 +660,6 @@ namespace Intelligences.FixProtocol.Client.Dialects
                 this.loadedPositionsCount[account] = 0;
                 this.isNewPortfolioInitialized[account] = true;
                 this.NewPortfolio(this.portfolios[account]);
-
-                // После загрузки портфеля запустим процесс получения заявок
-                //if (this.settings.IsTradeStream() == true)
-                //{
-                //    this.ordersUpdateRequest();
-                //    this.securityEventsAllowed = true;
-                //}
             }
         }
 

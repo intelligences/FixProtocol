@@ -1,17 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>netstandard2.0; netstandard2.1</TargetFrameworks>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <AssemblyName>Intelligences.FixProtocol</AssemblyName>
     <RootNamespace>Intelligences.FixProtocol</RootNamespace>
-    <Version>1.0.4.14</Version>
+    <Version>1.0.4.16</Version>
     <Description>Fix protocol implimentation library.
 
 Supported brokers:
   - Exante</Description>
-    <AssemblyVersion>1.0.4.13</AssemblyVersion>
-    <FileVersion>1.0.4.13</FileVersion>
     <Company>Intelligences</Company>
     <PackageProjectUrl>https://github.com/intelligences/FixProtocol</PackageProjectUrl>
     <RepositoryUrl>https://github.com/intelligences/FixProtocol</RepositoryUrl>

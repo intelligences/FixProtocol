@@ -17,6 +17,7 @@ namespace Intelligences.FixProtocol.Model
             this.portfolio = portfolio;
             this.security = security;
             this.beginValue = beginValue;
+            this.currentValue = beginValue;
             this.currency = currency;
             this.updatedAt = DateTimeOffset.UtcNow;
         }
