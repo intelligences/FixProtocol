@@ -19,6 +19,7 @@ namespace Intelligences.FixProtocol.Model
         private DateTimeOffset? updatedAt;
         private TimeInForce timeInForce;
         private OrderState state;
+        private decimal filledQty;
 
         public Order(
             decimal quantity,
@@ -92,6 +93,11 @@ namespace Intelligences.FixProtocol.Model
             return this.price;
         }
 
+        public decimal GetFilledQty()
+        {
+            return this.filledQty;
+        }
+
         public void SetPrice(decimal price)
         {
             this.price = price;
@@ -159,6 +165,11 @@ namespace Intelligences.FixProtocol.Model
         internal void SetUpdatedAt(DateTimeOffset updatedAt)
         {
             this.updatedAt = updatedAt;
+        }
+
+        internal void SetFilledQty(decimal filledQty)
+        {
+            this.filledQty = filledQty;
         }
     }
 }

@@ -85,9 +85,10 @@ namespace Intelligences.FixProtocol.Model
             //this.SetProperty("EndDay", "SUN");
             //this.SetProperty("StartTime", "22:00:00");
             //this.SetProperty("EndTime", "22:00:00");
-            this.SetProperty("ResetOnLogon", "Y");
+            this.SetProperty("ResetOnLogon", "N");
             this.SetProperty("ResetOnLogout", "N");
             this.SetProperty("ResetOnDisconnect", "N");
+            this.SetProperty("ResetSeqNumFlag", "Y");
             this.SetProperty("CheckLatency", "N");
             this.SetProperty("UseDataDictionary", "Y");
             this.SetProperty("DataDictionary", "Dictionaries/FIX44.xml");
@@ -125,7 +126,6 @@ namespace Intelligences.FixProtocol.Model
         public void TradeStream()
         {
             this.isTradeStream = true;
-            this.SetProperty("ResetOnLogon", "N");
         }
 
         public string GetFastTemplatePatch()

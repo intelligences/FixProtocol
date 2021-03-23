@@ -487,7 +487,6 @@ namespace Intelligences.FixProtocol.Client.Dialects
         /// <param name="order">Order <see cref="Order"/></param>
         public void CancelOrder(Order order)
         {
-
             string clientOrderId = order.GetClientOrderId();
             Security security = order.GetSecurity();
             string securityId = security.GetId();
@@ -688,6 +687,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
                 Price priceField = new Price();
                 LastPx lastPx = new LastPx();
                 LastQty lastQty = new LastQty();
+                CumQty cumQty = new CumQty();
                 Text text = new Text();
                 ExanteOrdRejReason exanteOrdRejReason = new ExanteOrdRejReason();
 
@@ -698,7 +698,8 @@ namespace Intelligences.FixProtocol.Client.Dialects
                 message.GetField(securityID);
                 message.GetField(ordStatus);
                 message.GetField(ordType);
-              
+                message.GetField(cumQty);
+
                 if (message.IsSetPrice())
                 {
                     message.GetField(priceField);
@@ -714,6 +715,11 @@ namespace Intelligences.FixProtocol.Client.Dialects
                     message.GetField(lastQty);
                 }
 
+                if (message.IsSetCumQty())
+                {
+                    message.GetField(cumQty);
+                }
+
                 string clientOrderid = clOrdID.getValue();
                 string accountName = account.getValue();
                 string securityId = securityID.getValue();
@@ -723,6 +729,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
                 decimal price = priceField.getValue();
                 decimal lastPrice = lastPx.getValue();
                 decimal lastQuantity = lastQty.getValue();
+                decimal filledQty = cumQty.getValue();
 
                 if (!this.portfolios.TryGetValue(accountName, out Portfolio portfolio))
                 {
@@ -764,6 +771,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
 
                 order.SetOrderId(orderId);
                 order.SetQuantity(quantity);
+                order.SetFilledQty(filledQty);
                 order.SetPrice(price);
                 order.SetClientOrderId(clientOrderid);
 
@@ -932,7 +940,13 @@ namespace Intelligences.FixProtocol.Client.Dialects
                 {
                     message.SetField(new Password(this.settings.GetProperty("Password")));
 
-                    if (this.settings.IsTradeStream())
+                    string seqFlag = this.settings.GetProperty("ResetSeqNumFlag");
+
+                    if (String.IsNullOrEmpty(seqFlag) || seqFlag.ToUpper() == "Y" || seqFlag == "1")
+                    {
+                        message.SetField(new ResetSeqNumFlag(ResetSeqNumFlag.YES));
+                    }
+                    else
                     {
                         message.SetField(new ResetSeqNumFlag(ResetSeqNumFlag.NO));
                     }
