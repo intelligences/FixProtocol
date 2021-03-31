@@ -138,6 +138,7 @@ namespace Intelligences.FixProtocol.Client
             switch(dialect)
             {
                 case FixDialect.Exante:
+                case FixDialect.Gozo:
                     this.client = new ExanteDialect(settings);
                     break;
                 case FixDialect.GainCapital:
@@ -188,7 +189,8 @@ namespace Intelligences.FixProtocol.Client
         /// <param name="sessionID"></param>
         public void FromApp(QuickFix.Message message, SessionID sessionID)
         {
-            if (this.settings.GetDialect() == FixDialect.Exante)
+            var dialect = this.settings.GetDialect();
+            if (dialect == FixDialect.Exante || dialect == FixDialect.Gozo)
             {
                 MsgType msgType = new MsgType();
                 message.Header.GetField(msgType);
@@ -295,6 +297,7 @@ namespace Intelligences.FixProtocol.Client
                     this.onGainRequest(message);
                     break;
                 case FixDialect.Exante:
+                case FixDialect.Gozo:
                     this.client.ParseSecuritiesList(message);
                     break;
             }
@@ -436,6 +439,7 @@ namespace Intelligences.FixProtocol.Client
                 //    this.client.OrderCancelReject(message);
                 //    break;
                 case FixDialect.Exante:
+                case FixDialect.Gozo:
                     this.client.OrderCancelReject(message);
                     break;
             }
@@ -449,6 +453,7 @@ namespace Intelligences.FixProtocol.Client
                 //    this.OrderCancelRejectForGain(message);
                 //    break;
                 case FixDialect.Exante:
+                case FixDialect.Gozo:
                     this.client.OrderCancelReplaceRequest(message);
                     break;
             }

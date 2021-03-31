@@ -9,7 +9,8 @@
     <Description>Fix protocol implimentation library.
 
 Supported brokers:
-  - Exante</Description>
+  - Exante
+  - Gozo</Description>
     <Company>Intelligences</Company>
     <PackageProjectUrl>https://github.com/intelligences/FixProtocol</PackageProjectUrl>
     <RepositoryUrl>https://github.com/intelligences/FixProtocol</RepositoryUrl>
@@ -21,6 +22,7 @@ Supported brokers:
     <Platforms>AnyCPU;x64</Platforms>
     <PackageIcon>icon.png</PackageIcon>
     <PackageIconUrl />
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 
   <ItemGroup>
