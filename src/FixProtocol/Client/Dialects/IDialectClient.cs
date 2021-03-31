@@ -102,8 +102,8 @@ namespace Intelligences.FixProtocol.Client.Dialects
         /// <summary>
         /// Find securities on the exchange
         /// </summary>
-        /// <param name="securityFilter">Security filter <see cref="SecurityFilter"/></param>
-        void FindSecurities(SecurityFilter securityFilter);
+        /// <param name="securityFilter">Security filter <see cref="FixSecurityFilter"/></param>
+        void FindSecurities(FixSecurityFilter securityFilter);
 
         /// <summary>
         /// Request list of all securities

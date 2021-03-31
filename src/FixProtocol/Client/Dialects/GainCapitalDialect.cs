@@ -112,7 +112,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
             throw new NotImplementedException();
         }
 
-        public void FindSecurities(SecurityFilter securityFilter)
+        public void FindSecurities(FixSecurityFilter securityFilter)
         {
             throw new NotImplementedException();
         }

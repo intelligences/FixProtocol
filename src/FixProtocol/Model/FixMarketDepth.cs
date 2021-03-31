@@ -27,7 +27,7 @@ namespace Intelligences.FixProtocol.Model
             }
             set
             {
-                this.asks = asks.OrderByDescending(x => x.GetPrice()).ToList();
+                this.asks = asks.OrderByDescending(x => x.Price).ToList();
 
                 this.BestAsk = this.asks.LastOrDefault();
             }
@@ -46,7 +46,7 @@ namespace Intelligences.FixProtocol.Model
             }
             internal set
             {
-                this.bids = value.OrderByDescending(x => x.GetPrice()).ToList();
+                this.bids = value.OrderByDescending(x => x.Price).ToList();
                 this.BestBid = this.bids.LastOrDefault();
             }
         }

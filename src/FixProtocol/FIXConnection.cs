@@ -252,8 +252,8 @@ namespace Intelligences.FixProtocol
         /// <summary>
         /// Поиск инструментов
         /// </summary>
-        /// <param name="securityFilter">Фильтр инструментов <see cref="SecurityFilter"/></param>
-        public void FindSecurities(SecurityFilter securityFilter)
+        /// <param name="securityFilter">Фильтр инструментов <see cref="FixSecurityFilter"/></param>
+        public void FindSecurities(FixSecurityFilter securityFilter)
         {
             if (!this.IsConnected())
             {

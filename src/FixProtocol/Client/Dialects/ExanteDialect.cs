@@ -15,7 +15,6 @@ using Intelligences.FixProtocol.Enum;
 using TimeInForce = QuickFix.Fields.TimeInForce;
 using System.Globalization;
 using Intelligences.FixProtocol.Filter;
-using SecurityType = Intelligences.FixProtocol.Enum.SecurityType;
 using Intelligences.FixProtocol.Fields;
 using Tags = QuickFix.Fields.Tags;
 using Intelligences.FixProtocol.Exceptions;
@@ -350,12 +349,12 @@ namespace Intelligences.FixProtocol.Client.Dialects
         /// <summary>
         /// Find securities on the exchange
         /// </summary>
-        /// <param name="securityFilter">Security filter <see cref="SecurityFilter"/></param>
-        public void FindSecurities(SecurityFilter securityFilter)
+        /// <param name="securityFilter">Security filter <see cref="FixSecurityFilter"/></param>
+        public void FindSecurities(FixSecurityFilter securityFilter)
         {
             int requestType = SecurityListRequestType.ALL_SECURITIES;
             string securityCode = securityFilter.Code;
-            SecurityType? securityType = securityFilter.Type;
+            FixSecurityType? securityType = securityFilter.Type;
 
             if (securityCode != null)
             {
@@ -1043,10 +1042,10 @@ namespace Intelligences.FixProtocol.Client.Dialects
                 switch (mdEntryType.getValue())
                 {
                     case MDEntryType.BID:
-                        bids.Add(new Model.FixQuote(price, volume, Direction.Buy));
+                        bids.Add(new Model.FixQuote(price, volume, FixDirection.Buy));
                         break;
                     case MDEntryType.OFFER:
-                        asks.Add(new Model.FixQuote(price, volume, Direction.Sell));
+                        asks.Add(new Model.FixQuote(price, volume, FixDirection.Sell));
                         break;
                     case MDEntryType.TRADE:
                         if (this.tradeSubscriptions.Contains(securityId))

@@ -32,7 +32,7 @@ namespace Intelligences.FixProtocol.Model
         /// Security type
         /// </summary>
         [JsonProperty]
-        public SecurityType Type { get; internal set; }
+        public FixSecurityType Type { get; internal set; }
 
         /// <summary>
         /// Base security currency

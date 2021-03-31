@@ -1,6 +1,6 @@
 ﻿namespace Intelligences.FixProtocol.Enum
 {
-    public enum TimeInForce
+    public enum FixTimeInForce
     {
         Day,
         GoodTillCancel,

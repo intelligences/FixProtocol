@@ -171,8 +171,8 @@ namespace Intelligences.FixProtocol.Client
         /// <summary>
         /// Search securiries by filter
         /// </summary>
-        /// <param name="securityFilter">Security Filter <see cref="SecurityFilter"/></param>
-        public void FindSecurities(SecurityFilter filter)
+        /// <param name="securityFilter">Security Filter <see cref="FixSecurityFilter"/></param>
+        public void FindSecurities(FixSecurityFilter filter)
         {
 
         }

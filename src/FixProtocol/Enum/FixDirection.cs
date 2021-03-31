@@ -1,6 +1,6 @@
 ﻿namespace Intelligences.FixProtocol.Enum
 {
-    public enum Direction
+    public enum FixDirection
     {
         Buy,
         Sell

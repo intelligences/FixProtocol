@@ -4,30 +4,15 @@ namespace Intelligences.FixProtocol.Model
 {
     public class FixQuote
     {
-        private decimal price;
-        private decimal volume;
-        private Direction direction;
+        public decimal Price { get; private set; }
+        public decimal Volume { get; private set; }
+        public FixDirection Direction { get; private set; }
 
-        public FixQuote(decimal price, decimal volume, Direction direction)
+        public FixQuote(decimal price, decimal volume, FixDirection direction)
         {
-            this.price = price;
-            this.volume = volume;
-            this.direction = direction;
-        }
-
-        public decimal GetPrice()
-        {
-            return this.price;
-        }
-
-        public decimal GetVolume()
-        {
-            return this.volume;
-        }
-
-        public Direction GetDirection()
-        {
-            return this.direction;
+            this.Price = price;
+            this.Volume = volume;
+            this.Direction = direction;
         }
     }
 }

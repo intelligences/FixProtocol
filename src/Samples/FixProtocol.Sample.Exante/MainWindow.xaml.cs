@@ -183,7 +183,7 @@ namespace Intelligences.FixProtocol.Sample.Exante
                 //this.tradeStream.FindSecurities(new SecurityFilter()
                 //{
                 //    Code = "ES",
-                //    Type = SecurityType.Future,
+                //    Type = FixSecurityType.Future,
                 //});
             };
 
@@ -223,16 +223,16 @@ namespace Intelligences.FixProtocol.Sample.Exante
                     {
                         this.marketDepthList.Add(new MarketDepthView()
                         {
-                            Price = ask.GetPrice(),
-                            Ask = ask.GetVolume(),
+                            Price = ask.Price,
+                            Ask = ask.Volume,
                         });
                     }
 
                     foreach (var bid in marketDepth.Bids)
                     {
                         this.marketDepthList.Add(new MarketDepthView() {
-                            Price = bid.GetPrice(),
-                            Bid = bid.GetVolume(),
+                            Price = bid.Price,
+                            Bid = bid.Volume,
                         });
                     }
 
@@ -271,22 +271,22 @@ namespace Intelligences.FixProtocol.Sample.Exante
 
         private void MarketBuyBtn_Click(object sender, RoutedEventArgs e)
         {
-            this.tradeStream.PlaceOrder(new FixMarketOrder(1, Direction.Buy, this.portfolio.Name, this.security.GetSecurityId()));
+            this.tradeStream.PlaceOrder(new FixMarketOrder(1, FixDirection.Buy, this.portfolio.Name, this.security.GetSecurityId()));
         }
 
         private void MarketSellBtn_Click(object sender, RoutedEventArgs e)
         {
-            this.tradeStream.PlaceOrder(new FixMarketOrder(1, Direction.Sell, this.portfolio.Name, this.security.GetSecurityId()));
+            this.tradeStream.PlaceOrder(new FixMarketOrder(1, FixDirection.Sell, this.portfolio.Name, this.security.GetSecurityId()));
         }
 
         private void BuyLimitBtn_Click(object sender, RoutedEventArgs e)
         {
-            this.tradeStream.PlaceOrder(new FixLimitOrder(this.buyLimitValue, 1, Direction.Buy, this.portfolio.Name, this.security.GetSecurityId()));
+            this.tradeStream.PlaceOrder(new FixLimitOrder(this.buyLimitValue, 1, FixDirection.Buy, this.portfolio.Name, this.security.GetSecurityId()));
         }
 
         private void SellLimitBtn_Click(object sender, RoutedEventArgs e)
         {
-            this.tradeStream.PlaceOrder(new FixLimitOrder(this.sellLimitValue, 1, Direction.Sell, this.portfolio.Name, this.security.GetSecurityId()));
+            this.tradeStream.PlaceOrder(new FixLimitOrder(this.sellLimitValue, 1, FixDirection.Sell, this.portfolio.Name, this.security.GetSecurityId()));
         }
 
         private decimal buyLimitValue = 0;

@@ -3,7 +3,7 @@
     /// <summary>
     /// Типы инструментов
     /// </summary>
-    public enum SecurityType
+    public enum FixSecurityType
     {
         Forex,
 

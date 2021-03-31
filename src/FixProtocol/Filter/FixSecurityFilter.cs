@@ -5,7 +5,7 @@ namespace Intelligences.FixProtocol.Filter
     /// <summary>
     /// Security filter
     /// </summary>
-    public class SecurityFilter
+    public class FixSecurityFilter
     {
         /// <summary>
         /// Security Code
@@ -15,6 +15,6 @@ namespace Intelligences.FixProtocol.Filter
         /// <summary>
         /// Security type
         /// </summary>
-        public SecurityType? Type { get; set; }
+        public FixSecurityType? Type { get; set; }
     }
 }

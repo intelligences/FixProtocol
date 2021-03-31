@@ -41,10 +41,10 @@ namespace Intelligences.FixProtocol.Sample.GainCapital
             {
                 Debug.WriteLine("FIX Connected !!!");
 
-                this.connection.FindSecurities(new SecurityFilter()
+                this.connection.FindSecurities(new FixSecurityFilter()
                 {
                     Code = "esz9",
-                    Type = SecurityType.Future,
+                    Type = FixSecurityType.Future,
                 });
             };
 
@@ -108,10 +108,10 @@ namespace Intelligences.FixProtocol.Sample.GainCapital
 
         private void TextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
         {
-            this.connection.FindSecurities(new SecurityFilter()
+            this.connection.FindSecurities(new FixSecurityFilter()
             {
                 Code = FindSecuritiesBtn.Text,
-                //Type = SecurityType.Future,
+                //Type = FixSecurityType.Future,
             });
         }
     }

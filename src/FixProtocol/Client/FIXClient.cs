@@ -382,7 +382,7 @@ namespace Intelligences.FixProtocol.Client
         /// <summary>
         /// Найти инструменты
         /// </summary>
-        internal void FindSecurities(SecurityFilter securityFilter)
+        internal void FindSecurities(FixSecurityFilter securityFilter)
         {
             this.client.FindSecurities(securityFilter);
         }

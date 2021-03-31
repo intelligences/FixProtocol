@@ -4,9 +4,9 @@ using QuickFix;
 using QuickFix.Fields;
 using System;
 using System.Globalization;
-using SecurityType = Intelligences.FixProtocol.Enum.SecurityType;
+using FixSecurityType = Intelligences.FixProtocol.Enum.FixSecurityType;
 using TimeInForce = QuickFix.Fields.TimeInForce;
-using TimeInForceEnum = Intelligences.FixProtocol.Enum.TimeInForce;
+using TimeInForceEnum = Intelligences.FixProtocol.Enum.FixTimeInForce;
 
 namespace Intelligences.FixProtocol
 {
@@ -46,31 +46,31 @@ namespace Intelligences.FixProtocol
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static string ToCFICode(this SecurityType? type)
+        public static string ToCFICode(this FixSecurityType? type)
         {
             string code = "";
 
             switch (type)
             {
-                case SecurityType.Forex:
+                case FixSecurityType.Forex:
                     code = "MRCXXX";
                     break;
-                case SecurityType.Future:
+                case FixSecurityType.Future:
                     code = "FXXXXX";
                     break;
-                case SecurityType.Stock:
+                case FixSecurityType.Stock:
                     code = "EXXXXX";
                     break;
-                case SecurityType.CallOption:
+                case FixSecurityType.CallOption:
                     code = "OCXXXX";
                     break;
-                case SecurityType.PutOption:
+                case FixSecurityType.PutOption:
                     code = "OPXXXX";
                     break;
-                case SecurityType.Fond:
+                case FixSecurityType.Fond:
                     code = "EUXXXX";
                     break;
-                case SecurityType.Bond:
+                case FixSecurityType.Bond:
                     code = "DBXXXX";
                     break;
             }
@@ -83,52 +83,52 @@ namespace Intelligences.FixProtocol
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static SecurityType ToSecurityType(this string code)
+        public static FixSecurityType ToSecurityType(this string code)
         {
-            SecurityType? type = null;
+            FixSecurityType? type = null;
 
             switch (code)
             {
                 case "MRCXXX":
-                    type = SecurityType.Forex;
+                    type = FixSecurityType.Forex;
                     break;
                 case "FXXXXX":
-                    type = SecurityType.Future;
+                    type = FixSecurityType.Future;
                     break;
                 case "EXXXXX":
-                    type = SecurityType.Stock;
+                    type = FixSecurityType.Stock;
                     break;
                 case "OCXXXX":
-                    type = SecurityType.CallOption;
+                    type = FixSecurityType.CallOption;
                     break;
                 case "OPXXXX":
-                    type = SecurityType.PutOption;
+                    type = FixSecurityType.PutOption;
                     break;
                 case "EUXXXX":
-                    type = SecurityType.Fond;
+                    type = FixSecurityType.Fond;
                     break;
                 case "DBXXXX":
-                    type = SecurityType.Bond;
+                    type = FixSecurityType.Bond;
                     break;
                 case "FMXXXX":
-                    type = SecurityType.CalendarSpread;
+                    type = FixSecurityType.CalendarSpread;
                     break;
                 case "MMXXXX":
-                    type = SecurityType.Swap;
+                    type = FixSecurityType.Swap;
                     break;
             }
 
-            return (SecurityType) type;
+            return (FixSecurityType) type;
         }
 
-        public static char ToFixOrderSide(this Direction direction)
+        public static char ToFixOrderSide(this FixDirection direction)
         {
-            return direction == Direction.Buy ? Side.BUY : Side.SELL;
+            return direction == FixDirection.Buy ? Side.BUY : Side.SELL;
         }
 
-        public static Direction ToDirection(this Side side)
+        public static FixDirection ToDirection(this Side side)
         {
-            return side.getValue() == Side.BUY ? Direction.Buy : Direction.Sell;
+            return side.getValue() == Side.BUY ? FixDirection.Buy : FixDirection.Sell;
         }
 
         public static FixOrderType ToOrderType(this OrdType ordType)
