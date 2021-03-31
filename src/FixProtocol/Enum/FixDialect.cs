@@ -3,7 +3,7 @@
     /// <summary>
     /// Dialect for FIX protocol
     /// </summary>
-    public enum Dialect
+    public enum FixDialect
     {
         /// <summary>
         /// Default/Standard dialect
@@ -14,6 +14,11 @@
         /// Dialect for Exante broker
         /// </summary>
         Exante,
+
+        /// <summary>
+        /// Dialect for Gozo(Exante) broker
+        /// </summary>
+        Gozo,
 
         /// <summary>
         /// Dialect for GainCapital broker

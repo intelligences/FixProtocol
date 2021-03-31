@@ -4,8 +4,8 @@ namespace Intelligences.FixProtocol.Client
 {
     internal interface IMarketDataClient
     {
-        void SubscribeMarketDepth(Security security);
-        void UnSubscribeMarketDepth(Security security);
+        void SubscribeMarketDepth(FixSecurity security);
+        void UnSubscribeMarketDepth(FixSecurity security);
 
         //void SubscribeTrades(Security security);
         //void UnSubscribeTrades(Security security);

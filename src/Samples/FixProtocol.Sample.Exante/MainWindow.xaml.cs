@@ -19,11 +19,11 @@ namespace Intelligences.FixProtocol.Sample.Exante
     {
         private FIXConnection tradeStream;
         private FIXConnection marketDataStream;
-        private Security security;
-        private Portfolio portfolio;
+        private FixSecurity security;
+        private FixAccount portfolio;
 
         private readonly ObservableCollection<MarketDepthView> marketDepthList;
-        private readonly ObservableCollection<OrderView> ordersList;
+        private readonly ObservableCollection<FixOrder> ordersList = new ObservableCollection<FixOrder>();
 
         public MainWindow()
         {
@@ -32,7 +32,6 @@ namespace Intelligences.FixProtocol.Sample.Exante
             Closing += this.onWindowClosing;
 
             this.marketDepthList = new ObservableCollection<MarketDepthView>();
-            this.ordersList = new ObservableCollection<OrderView>();
 
             this.MarketDepthList.ItemsSource = this.marketDepthList;
             this.OrdersList.ItemsSource = this.ordersList;
@@ -84,14 +83,21 @@ namespace Intelligences.FixProtocol.Sample.Exante
                 return;
             }
 
-            Settings settings = new Settings(
+            FixSettings settings = new FixSettings(
                this.TradeStreamTarget.Text,
                this.TradeStreamSender.Text,
                "fixuat2.exante.eu",
                8101,
-               Dialect.Exante
+               FixDialect.Exante
             );
 
+            settings.SetProperty("ResetOnLogon", "N");
+            settings.SetProperty("ResetSeqNumFlag", "N");
+            settings.SetProperty("StartDay", "SUN");
+            settings.SetProperty("StartTime", "22:00:00");
+            settings.SetProperty("EndDay", "FRI");
+            settings.SetProperty("EndTime", "21:58:00");
+            
             settings.SetProperty("Password", this.TradeStreamPassword.Text);
             settings.SetProperty("DataDictionary", "Dictionaries/FIX44Exante.xml");
             settings.SetProperty("UseDataDictionary", "Y");
@@ -99,16 +105,25 @@ namespace Intelligences.FixProtocol.Sample.Exante
             settings.SetPortfolioUpdateInterval(20);
             settings.SetOrdersUpdateInterval(20);
             settings.TradeStream();
-            
+            settings.EnableLogging();
+            settings.EnableSecuritiesChache();
+
             this.tradeStream = new FIXConnection(settings);
 
-            Settings settings2 = new Settings(
+            FixSettings settings2 = new FixSettings(
                 this.MarketStreamTarget.Text,
                 this.MarketStreamSender.Text,
                 "fixuat2.exante.eu",
                 8100,
-                Dialect.Exante
+                FixDialect.Exante
             );
+
+            settings2.SetProperty("ResetOnLogon", "Y");
+            settings2.SetProperty("ResetSeqNumFlag", "Y");
+            settings2.SetProperty("StartDay", "SUN");
+            settings2.SetProperty("StartTime", "22:00:00");
+            settings2.SetProperty("EndDay", "FRI");
+            settings2.SetProperty("EndTime", "21:58:00");
 
             settings2.SetProperty("Password", this.MarketStreamPassword.Text);
             settings2.SetProperty("DataDictionary", "Dictionaries/FIX44Exante.xml");
@@ -117,31 +132,31 @@ namespace Intelligences.FixProtocol.Sample.Exante
             this.marketDataStream = new FIXConnection(settings2);
 
             /// Portfolios
-            this.tradeStream.NewPortfolio += (Portfolio portfolio) =>
+            this.tradeStream.NewAccount += (FixAccount portfolio) =>
             {
                 this.portfolio = portfolio;
-                Debug.WriteLine("Portfolio: {0}, {1}", portfolio.GetName(), portfolio.GetCurrentValue());
+                Debug.WriteLine("Account: {0}, {1}", portfolio.Name, portfolio.TotalNewValue);
             };
 
-            this.tradeStream.PortfolioChanged += (Portfolio portfolio) =>
+            this.tradeStream.AccountChanged += (FixAccount portfolio) =>
             {
-               // Debug.WriteLine("Portfolio: {0}, {1}", portfolio.GetName(), portfolio.GetCurrentValue());
+               Debug.WriteLine("Account: {0}, {1}", portfolio.Name, portfolio.TotalNewValue);
             };
 
             /// Positions
-            this.tradeStream.NewPosition += (Position position) =>
+            this.tradeStream.NewPosition += (FixPosition position) =>
             {
                // Debug.WriteLine("Position: {0}, {1}", position.GetSecurityCode(), position.GetCurrentValue());
             };
 
-            this.tradeStream.PositionChanged += (Position position) =>
+            this.tradeStream.PositionChanged += (FixPosition position) =>
             {
                 //Debug.WriteLine("Position: {0}, {1}", position.GetSecurityCode(), position.GetCurrentValue());
             };
 
-            this.tradeStream.NewMyTrade += (MyTrade myTrade) =>
+            this.tradeStream.NewMyTrade += (FixMyTrade myTrade) =>
             {
-                Debug.WriteLine("New my trade: {0}, {1}, {2}", myTrade.GetOrder().GetOrderId(), myTrade.GetTrade().GetPrice(), myTrade.GetTrade().GetVolume());
+                Debug.WriteLine("New my trade: {0}, {1}, {2}", myTrade.Order.OrderId, myTrade.Trade.Price, myTrade.Trade.Volume);
             };
 
             // connection to feed stream
@@ -150,21 +165,21 @@ namespace Intelligences.FixProtocol.Sample.Exante
                 this.changeConnectBtnText("Disconnect");
 
                 Debug.WriteLine("FIX Trade stream Connected !!!");
-                //this.marketDataStream.Connect();
+                this.marketDataStream.Connect();
                 this.tradeStream.SubscribePortfolioUpdates();
                 this.tradeStream.SubscribeOrdersUpdates();
             };
-
             //// connection to market data stream
             this.marketDataStream.Connected += () =>
             {
                 Debug.WriteLine("FIX Market data stream Connected !!!");
 
-                this.tradeStream.FindSecurities(new SecurityFilter()
-                {
-                    Code = "TEST-RANDOM",
-                });
+                //this.tradeStream.FindSecurities(new SecurityFilter()
+                //{
+                //    Code = "TEST-RANDOM",
+                //});
 
+                this.tradeStream.RequestSecurities();
                 //this.tradeStream.FindSecurities(new SecurityFilter()
                 //{
                 //    Code = "ES",
@@ -179,15 +194,16 @@ namespace Intelligences.FixProtocol.Sample.Exante
                 Debug.WriteLine("FIX trade stream disconnected ");
             };
 
-            this.tradeStream.NewSecurity += (Security security) =>
+            this.tradeStream.NewSecurity += (FixSecurity security) =>
             {
-                if (security.GetId() == "TEST-RANDOM.TEST")
+                if (security.Id == "TEST-RANDOM.TEST")
                 {
-                    Debug.WriteLine("Подписываемся на инструмент: " + security.GetId());
-                    this.marketDataStream.SubscribeMarketDepth(security);
+                    Debug.WriteLine("Подписываемся на инструмент: " + security.Id);
+                    this.marketDataStream.SubscribeMarketDepth(security.Id);
 
                     this.security = security;
                 }
+
                 //if (security.GetId() == "ES.CME.Z2019")
                 //{
                 //    Debug.WriteLine("Подписываемся на инструмент: " + security.GetId());
@@ -197,13 +213,13 @@ namespace Intelligences.FixProtocol.Sample.Exante
                 //}
             };
 
-            this.marketDataStream.MarketDepthChanged += (MarketDepth marketDepth) =>
+            this.marketDataStream.MarketDepthChanged += (FixMarketDepth marketDepth) =>
             {
                 this.MarketDepthList.Dispatcher.Invoke(new Action(() =>
                 {
                     this.marketDepthList.Clear();
 
-                    foreach (var ask in marketDepth.GetAsks())
+                    foreach (var ask in marketDepth.Asks)
                     {
                         this.marketDepthList.Add(new MarketDepthView()
                         {
@@ -212,7 +228,7 @@ namespace Intelligences.FixProtocol.Sample.Exante
                         });
                     }
 
-                    foreach (var bid in marketDepth.GetBids())
+                    foreach (var bid in marketDepth.Bids)
                     {
                         this.marketDepthList.Add(new MarketDepthView() {
                             Price = bid.GetPrice(),
@@ -224,26 +240,19 @@ namespace Intelligences.FixProtocol.Sample.Exante
                 }));
             };
 
-            this.tradeStream.NewOrder += (Order order) =>
+            this.tradeStream.NewOrder += (FixOrder order) =>
             {
                 this.OrdersList.Dispatcher.Invoke(new Action(() =>
                 {
-                    this.ordersList.Add(new OrderView(order));
+                    this.ordersList.Add(order);
                 }));
             };
 
-            this.tradeStream.OrderChanged += (Order order) =>
+            this.tradeStream.OrderChanged += (FixOrder order) =>
             {
                 this.OrdersList.Dispatcher.Invoke(new Action(() =>
                 {
-                    OrderView ord = this.ordersList.FirstOrDefault(x => x.TransactionId == order.GetTransactionId());
-
-                    if (ord != null)
-                    {
-                        ord.UpdateView(order);
-
-                        this.OrdersList.Items.Refresh();
-                    }
+                    this.OrdersList.Items.Refresh();
                 }));
             };
 
@@ -262,27 +271,27 @@ namespace Intelligences.FixProtocol.Sample.Exante
 
         private void MarketBuyBtn_Click(object sender, RoutedEventArgs e)
         {
-            this.tradeStream.PlaceOrder(new MarketOrder(1, Direction.Buy, this.portfolio, this.security));
+            this.tradeStream.PlaceOrder(new FixMarketOrder(1, Direction.Buy, this.portfolio.Name, this.security.GetSecurityId()));
         }
 
         private void MarketSellBtn_Click(object sender, RoutedEventArgs e)
         {
-            this.tradeStream.PlaceOrder(new MarketOrder(1, Direction.Sell, this.portfolio, this.security));
+            this.tradeStream.PlaceOrder(new FixMarketOrder(1, Direction.Sell, this.portfolio.Name, this.security.GetSecurityId()));
         }
 
         private void BuyLimitBtn_Click(object sender, RoutedEventArgs e)
         {
-            this.tradeStream.PlaceOrder(new LimitOrder(this.buyLimitValue, 1, Direction.Buy, this.portfolio, this.security));
+            this.tradeStream.PlaceOrder(new FixLimitOrder(this.buyLimitValue, 1, Direction.Buy, this.portfolio.Name, this.security.GetSecurityId()));
         }
 
         private void SellLimitBtn_Click(object sender, RoutedEventArgs e)
         {
-            this.tradeStream.PlaceOrder(new LimitOrder(this.sellLimitValue, 1, Direction.Sell, this.portfolio, this.security));
+            this.tradeStream.PlaceOrder(new FixLimitOrder(this.sellLimitValue, 1, Direction.Sell, this.portfolio.Name, this.security.GetSecurityId()));
         }
 
         private decimal buyLimitValue = 0;
         private decimal sellLimitValue = 0;
-        private Order selectedOrder;
+        private FixOrder selectedOrder;
 
         private void BuyLimitValue_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
         {
@@ -316,22 +325,21 @@ namespace Intelligences.FixProtocol.Sample.Exante
 
         private void CancelOrderBtn_Click(object sender, RoutedEventArgs e)
         {
-            OrderView orderView = this.OrdersList.SelectedItem as OrderView;
+            FixOrder order = this.OrdersList.SelectedItem as FixOrder;
 
-            if (orderView.GetOrder() != null)
+            if (order != null)
             {
-                this.tradeStream.CancelOrder(orderView.GetOrder());
+                this.tradeStream.CancelOrder(order);
             }
         }
 
 
         private void ChangeOrderPrice_Click(object sender, RoutedEventArgs e)
         {
-            OrderView orderView = this.OrdersList.SelectedItem as OrderView;
-            Order order = orderView.GetOrder();
+            FixOrder order = this.OrdersList.SelectedItem as FixOrder;
             if (order != null)
             {
-                order.SetPrice(order.GetPrice() - 0.1m);
+                order.Price = order.Price - 0.1m;
                 this.tradeStream.ModifyOrder(order);
             }
         }

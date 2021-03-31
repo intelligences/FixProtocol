@@ -1,5 +1,4 @@
-﻿using Intelligences.FixProtocol.DTO;
-using Intelligences.FixProtocol.Filter;
+﻿using Intelligences.FixProtocol.Filter;
 using Intelligences.FixProtocol.Model;
 using QuickFix;
 using QuickFix.FIX44;
@@ -10,73 +9,73 @@ namespace Intelligences.FixProtocol.Client.Dialects
     internal class GainCapitalDialect : IDialectClient
     {
         /// <summary>
-        /// New portfolio event
+        /// New account event
         /// </summary>
-        public event Action<Portfolio> NewPortfolio;
+        public event Action<FixAccount> NewAccount;
 
         /// <summary>
-        /// Portfolio changed event
+        /// Account changed event
         /// </summary>
-        public event Action<Portfolio> PortfolioChanged;
+        public event Action<FixAccount> AccountChanged;
 
         /// <summary>
         /// New position event
         /// </summary>
-        public event Action<Position> NewPosition;
+        public event Action<FixPosition> NewPosition;
 
         /// <summary>
         /// Position changed event
         /// </summary>
-        public event Action<Position> PositionChanged;
+        public event Action<FixPosition> PositionChanged;
 
         /// <summary>
         /// New order event
         /// </summary>
-        public event Action<Order> NewOrder;
+        public event Action<FixOrder> NewOrder;
 
         /// <summary>
         /// Order changed event
         /// </summary>
-        public event Action<Order> OrderChanged;
+        public event Action<FixOrder> OrderChanged;
 
         /// <summary>
         /// Order place failed event
         /// </summary>
-        public event Action<OrderFail> OrderPlaceFailed;
+        public event Action<FixOrderFail> OrderPlaceFailed;
 
         /// <summary>
         /// New my trade event
         /// </summary>
-        public event Action<MyTrade> NewMyTrade;
+        public event Action<FixMyTrade> NewMyTrade;
 
         /// <summary>
         /// New security event
         /// </summary>
-        public event Action<Security> NewSecurity;
+        public event Action<FixSecurity> NewSecurity;
 
         /// <summary>
         /// New Trade event
         /// </summary>
-        public event Action<Trade> NewTrade;
+        public event Action<FixTrade> NewTrade;
 
         /// <summary>
         /// Trades unsubscribed event
         /// </summary>
-        public event Action<Security> TradesUnSubscribed;
+        public event Action<string> TradesUnSubscribed;
 
         /// <summary>
         /// Market depth changed
         /// </summary>
-        public event Action<MarketDepth> MarketDepthChanged;
+        public event Action<FixMarketDepth> MarketDepthChanged;
 
         /// <summary>
         /// Market depth unsubscribed
         /// </summary>
-        public event Action<Security> MarketDepthUnsubscribed;
+        public event Action<string> MarketDepthUnsubscribed;
 
-        private Model.Settings settings;
+        private Model.FixSettings settings;
 
-        public GainCapitalDialect(Model.Settings settings)
+        public GainCapitalDialect(Model.FixSettings settings)
         {
             this.settings = settings;
         }
@@ -89,12 +88,26 @@ namespace Intelligences.FixProtocol.Client.Dialects
 
         }
 
-        public void AccountSummaryRequest()
+        public void CancelOrder(FixOrder order)
         {
             throw new NotImplementedException();
         }
 
-        public void CancelOrder(Order order)
+        /// <summary>
+        /// Request list of all securities
+        /// </summary>
+        /// <remarks>If cache enabled, load from cache and async reload</remarks>
+        public void RequestSecurities() 
+        {
+            throw new NotImplementedException();
+        }
+
+        public void OrderMassStatusRequest()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void AccountSummaryRequest()
         {
             throw new NotImplementedException();
         }
@@ -104,17 +117,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
             throw new NotImplementedException();
         }
 
-        public void CreateSecurity(SecurityData securityData)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void ModifyOrder(Order order)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void OrderMassStatusRequest()
+        public void ModifyOrder(FixOrder order)
         {
             throw new NotImplementedException();
         }
@@ -144,7 +147,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
             throw new NotImplementedException();
         }
 
-        public void PlaceOrder(Order order)
+        public void PlaceOrder(FixOrder order)
         {
             throw new NotImplementedException();
         }
@@ -154,22 +157,22 @@ namespace Intelligences.FixProtocol.Client.Dialects
             throw new NotImplementedException();
         }
 
-        public void SubscribeMarketDepth(Security security)
+        public void SubscribeMarketDepth(string securityId)
         {
             throw new NotImplementedException();
         }
 
-        public void SubscribeTrades(Security security)
+        public void SubscribeTrades(string securityId)
         {
             throw new NotImplementedException();
         }
 
-        public void UnsubscribeMarketDepth(Security security)
+        public void UnsubscribeMarketDepth(string securityId)
         {
             throw new NotImplementedException();
         }
 
-        public void UnSubscribeTrades(Security security)
+        public void UnSubscribeTrades(string securityId)
         {
             throw new NotImplementedException();
         }

@@ -8,7 +8,7 @@ namespace Intelligences.FixProtocol.Model
     /// <summary>
     /// FIX and FAST Settings model
     /// </summary>
-    public class Settings
+    public class FixSettings
     {
         /// <summary>
         /// Patch to fast template
@@ -18,7 +18,7 @@ namespace Intelligences.FixProtocol.Model
         /// <summary>
         /// Dialect of FIX protocol
         /// </summary>
-        private Dialect dialect;
+        private FixDialect dialect;
 
         /// <summary>
         /// Version of FIX protocol
@@ -50,8 +50,11 @@ namespace Intelligences.FixProtocol.Model
         /// </summary>
         private bool isLoggingEnabled;
 
-        //private bool useCacheForSecuritiesList;
-
+        /// <summary>
+        /// Is securities cache enabled
+        /// </summary>
+        private bool isSecuritiesCacheEnabled = false;
+        private string securitiesCacheFileName = "Securities.dat";
         //private TimeSpan cacheUpdateTime;
 
         /// <summary>
@@ -63,7 +66,7 @@ namespace Intelligences.FixProtocol.Model
         /// <param name="socketPort"></param>
         /// <param name="dialect"></param>
         /// <param name="fixVersion"></param>
-        public Settings(string target, string sender, string socketHost, int socketPort, Dialect dialect = Dialect.Default, FixVersion fixVersion = FixVersion.Fix44)
+        public FixSettings(string target, string sender, string socketHost, int socketPort, FixDialect dialect = FixDialect.Default, FixVersion fixVersion = FixVersion.Fix44)
         {
             this.dialect = dialect;
             this.fixVersion = fixVersion;
@@ -96,7 +99,7 @@ namespace Intelligences.FixProtocol.Model
             this.SetProperty("FileLogPath", "FIX\\Log");
             this.SetProperty("ValidateFieldsOutOfOrder", "Y");
 
-            if (this.dialect == Dialect.GainCapital)
+            if (this.dialect == FixDialect.GainCapital)
             {
                 List<string> requiredFields = new List<string>(new string[] { "UUID", "Login", "Password" });
 
@@ -108,17 +111,17 @@ namespace Intelligences.FixProtocol.Model
                 if (
                     this.checkRequiredFields(requiredFields)
                 ) {
-                    throw new InvalidSettingsException(Resource.GainCapitalRequiredFieldsNotExists);
+                    throw new FixInvalidSettingsException(Resource.GainCapitalRequiredFieldsNotExists);
                 }
             }
-            else if (this.dialect == Dialect.Exante)
+            else if (this.dialect == FixDialect.Exante)
             {
                 List<string> requiredFields = new List<string>(new string[] { "Password" });
 
                 if (
                     this.checkRequiredFields(requiredFields)
                 ) {
-                    throw new InvalidSettingsException(Resource.GainCapitalRequiredFieldsNotExists);
+                    throw new FixInvalidSettingsException(Resource.GainCapitalRequiredFieldsNotExists);
                 }
             }
         }
@@ -138,7 +141,7 @@ namespace Intelligences.FixProtocol.Model
             this.fastTemplatePatch = patch;
         }
 
-        public Dialect GetDialect()
+        public FixDialect GetDialect()
         {
             return this.dialect;
         }
@@ -190,25 +193,30 @@ namespace Intelligences.FixProtocol.Model
             return this.properties;
         }
 
-        //public bool isUseCacheForSecuritiesList()
-        //{
-        //    return this.useCacheForSecuritiesList;
-        //}
+        public bool IsSecuritiesCacheEnabled()
+        {
+            return this.isSecuritiesCacheEnabled;
+        }
 
-        //public void UseCacheForSecuritiesList()
-        //{
-        //    this.useCacheForSecuritiesList = true;
-        //}
+        public void EnableSecuritiesChache()
+        {
+            this.isSecuritiesCacheEnabled = true;
+        }
 
-        //public TimeSpan GetCacheUpdateTime()
-        //{
-        //    return this.cacheUpdateTime;
-        //}
+        public void DisableSecuritiesChache()
+        {
+            this.isSecuritiesCacheEnabled = true;
+        }
 
-        //public void SetCacheUpdateTime(TimeSpan timeSpan)
-        //{
-        //    this.cacheUpdateTime = timeSpan;
-        //}
+        public string GetSecuritiesCacheFileName()
+        {
+            return this.securitiesCacheFileName;
+        }
+
+        public void SetSecuritiesCacheFileName(string filename)
+        {
+            this.securitiesCacheFileName = filename;
+        }
 
         private bool checkRequiredFields(List<string> keys)
         {

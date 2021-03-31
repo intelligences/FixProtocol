@@ -19,12 +19,12 @@ namespace Intelligences.FixProtocol.Sample.GainCapital
         {
             InitializeComponent();
 
-            Settings settings = new Settings(
+            FixSettings settings = new FixSettings(
                 "OEC_TEST",
                  "",
                  "api.gainfutures.com",
                  9300,
-                 Dialect.GainCapital
+                 FixDialect.GainCapital
             );
 
             settings.SetProperty("Password", "");
@@ -48,12 +48,12 @@ namespace Intelligences.FixProtocol.Sample.GainCapital
                 });
             };
 
-            this.connection.NewSecurity += (Security security) =>
+            this.connection.NewSecurity += (FixSecurity security) =>
             {
-                if (security.GetId() == "ES.CME.U2019")
+                if (security.Id == "ES.CME.U2019")
                 {
-                    Debug.WriteLine("Подписываемся на инструмент: " + security.GetId());
-                    this.connection.SubscribeMarketDepth(security);
+                    Debug.WriteLine("Подписываемся на инструмент: " + security.Id);
+                    this.connection.SubscribeMarketDepth(security.Id);
                 }
             };
 

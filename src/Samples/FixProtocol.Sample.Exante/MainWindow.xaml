@@ -119,15 +119,15 @@
                     <ListView.View>
                         <GridView>
                             <GridView.Columns>
-                                <GridViewColumn Header="TransactionId" DisplayMemberBinding="{Binding Path=TransactionId}"></GridViewColumn>
+                                <GridViewColumn Header="ClientOrderId" DisplayMemberBinding="{Binding Path=ClientOrderId}"></GridViewColumn>
                                 <GridViewColumn Header="OrderId" DisplayMemberBinding="{Binding Path=OrderId}"></GridViewColumn>
-                                <GridViewColumn Header="PortfolioName" DisplayMemberBinding="{Binding Path=PortfolioName}"></GridViewColumn>
+                                <GridViewColumn Header="AccountId" DisplayMemberBinding="{Binding Path=AccountId}"></GridViewColumn>
                                 <GridViewColumn Header="SecurityId" DisplayMemberBinding="{Binding Path=SecurityId}"></GridViewColumn>
                                 <GridViewColumn Header="CreatedAt" DisplayMemberBinding="{Binding Path=CreatedAt}"></GridViewColumn>
                                 <GridViewColumn Header="UpdatedAt" DisplayMemberBinding="{Binding Path=UpdatedAt}"></GridViewColumn>
                                 <GridViewColumn Header="Direction" DisplayMemberBinding="{Binding Path=Direction}"></GridViewColumn>
-                                <GridViewColumn Header="OrderType" DisplayMemberBinding="{Binding Path=OrderType}"></GridViewColumn>
-                                <GridViewColumn Header="OrderState" DisplayMemberBinding="{Binding Path=OrderState}"></GridViewColumn>
+                                <GridViewColumn Header="OrderType" DisplayMemberBinding="{Binding Path=Type}"></GridViewColumn>
+                                <GridViewColumn Header="OrderState" DisplayMemberBinding="{Binding Path=State}"></GridViewColumn>
                                 <GridViewColumn Header="Price" DisplayMemberBinding="{Binding Path=Price}"></GridViewColumn>
                                 <GridViewColumn Header="Quantity" DisplayMemberBinding="{Binding Path=Quantity}"></GridViewColumn>
                             </GridView.Columns>

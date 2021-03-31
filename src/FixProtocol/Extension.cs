@@ -1,10 +1,9 @@
 ﻿using Intelligences.FixProtocol.Enum;
 using Intelligences.FixProtocol.Model;
-using Intelligences.FixProtocol.Model.Conditions;
+using QuickFix;
 using QuickFix.Fields;
 using System;
 using System.Globalization;
-using System.Linq;
 using SecurityType = Intelligences.FixProtocol.Enum.SecurityType;
 using TimeInForce = QuickFix.Fields.TimeInForce;
 using TimeInForceEnum = Intelligences.FixProtocol.Enum.TimeInForce;
@@ -32,14 +31,14 @@ namespace Intelligences.FixProtocol
         /// </summary>
         /// <param name="security"></param>
         /// <returns></returns>
-        public static string GetSecurityId(this Security security)
+        public static string GetSecurityId(this FixSecurity security)
         {
             if (security == null)
             {
                 return null;
             }
 
-            return security.GetCode() + "." + security.GetBoard();
+            return security.Code + "." + security.Board;
         }
 
         /// <summary>
@@ -122,11 +121,6 @@ namespace Intelligences.FixProtocol
             return (SecurityType) type;
         }
 
-        public static int PriceStepToNumderOfDigits(this decimal digits)
-        {
-            return digits.ToString().Split(',').Last().Length;
-        }
-
         public static char ToFixOrderSide(this Direction direction)
         {
             return direction == Direction.Buy ? Side.BUY : Side.SELL;
@@ -137,85 +131,71 @@ namespace Intelligences.FixProtocol
             return side.getValue() == Side.BUY ? Direction.Buy : Direction.Sell;
         }
 
-        public static OrderType ToOrderType(this OrdType ordType)
+        public static FixOrderType ToOrderType(this OrdType ordType)
         {
-            OrderType type = OrderType.Limit;
+            FixOrderType type = FixOrderType.Limit;
             
             switch (ordType.getValue())
             {
                 case OrdType.MARKET:
-                    type = OrderType.Market;
+                    type = FixOrderType.Market;
                     break;
                 case OrdType.LIMIT:
-                    type = OrderType.Limit;
+                    type = FixOrderType.Limit;
+                    break;
+                case OrdType.STOP_LIMIT:
+                    type = FixOrderType.StopLimit;
+                    break;
+                case OrdType.STOP:
+                    type = FixOrderType.StopMarket;
                     break;
                 default:
-                    type = OrderType.Conditional;
+                    throw new UnsupportedMessageType();
                     break;
             }
 
             return type;
         }
 
-        public static OrderState ToOrderState(this OrdStatus ordStatus)
+        public static FixOrderState ToOrderState(this OrdStatus ordStatus)
         {
-            OrderState type = OrderState.Active;
-
             switch (ordStatus.getValue())
             {
-                case OrdStatus.CANCELED:
-                    type = OrderState.Canceled;
-                    break;
+                case OrdStatus.PENDING_NEW:
+                    return FixOrderState.PendingRegistration;
+                case OrdStatus.NEW:
+                    return FixOrderState.New;
                 case OrdStatus.PARTIALLY_FILLED:
-                    type = OrderState.PartialFilled;
-                    break;
+                    return FixOrderState.PartialFilled;
                 case OrdStatus.FILLED:
-                    type = OrderState.Filled;
-                    break;
+                    return FixOrderState.Filled;
+                case OrdStatus.PENDING_CANCEL:
+                    return FixOrderState.PendingCancel;
+                case OrdStatus.CANCELED:
+                    return FixOrderState.Canceled;
                 case OrdStatus.REJECTED:
-                    type = OrderState.Failed;
-                    break;
-            }
+                    return FixOrderState.Rejected;
 
-            return type;
+                default:
+                    throw new ArgumentException("Invalid order type for fix protocol");
+            }
         }
-        
 
-
-        public static char GetFixOrderType(this Order order)
+        public static char ToFixOrderType(this FixOrder order)
         {
-            OrderType orderType = order.GetOrderType();
-
-            char ordType = OrdType.LIMIT;
-
-            switch (orderType)
+            switch (order.Type)
             {
-                case OrderType.Market:
-                    ordType = OrdType.MARKET;
-                    break;
-                case OrderType.Limit:
-                    ordType = OrdType.LIMIT;
-                    break;
-                case OrderType.Conditional:
-                    Type type = order.GetCondition().GetType();
-
-                    if (type == typeof(StopMarket))
-                    {
-                        ordType = OrdType.STOP;
-                    }
-                    else if (type == typeof(StopLimit))
-                    {
-                        ordType = OrdType.STOP_LIMIT;
-                    }
-                    else
-                    {
-                        throw new ArgumentException("Invalid order type for fix protocol");
-                    }
-
-                    break;
+                case FixOrderType.Market:
+                    return OrdType.MARKET;
+                case FixOrderType.Limit:
+                    return OrdType.LIMIT;
+                case FixOrderType.StopMarket:
+                    return OrdType.STOP;
+                case FixOrderType.StopLimit:
+                    return OrdType.STOP_LIMIT;
+                default:
+                    throw new ArgumentException("Invalid order type for fix protocol");
             }
-
-            return ordType;
         }
 
         public static char ToFixTimeInForce(this TimeInForceEnum timeInForce)

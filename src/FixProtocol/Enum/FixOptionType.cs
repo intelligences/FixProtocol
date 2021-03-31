@@ -1,6 +1,6 @@
 ﻿namespace Intelligences.FixProtocol.Enum
 {
-    public enum OptionType
+    public enum FixOptionType
     {
         Put,
         Call

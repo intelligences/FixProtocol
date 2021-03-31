@@ -11,7 +11,7 @@ namespace Intelligences.FixProtocol.Factory
         /// </summary>
         /// <param name="settings"></param>
         /// <returns></returns>
-        public static SessionSettings Create(Model.Settings settings)
+        public static SessionSettings Create(Model.FixSettings settings)
         {
             if (settings == null)
             {

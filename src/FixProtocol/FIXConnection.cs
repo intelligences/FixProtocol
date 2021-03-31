@@ -1,5 +1,4 @@
 ﻿using Intelligences.FixProtocol.Client;
-using Intelligences.FixProtocol.DTO;
 using Intelligences.FixProtocol.Enum;
 using Intelligences.FixProtocol.Factory;
 using Intelligences.FixProtocol.Filter;
@@ -43,73 +42,77 @@ namespace Intelligences.FixProtocol
         /// <summary>
         /// New security event
         /// </summary>
-        public event Action<Security> NewSecurity;
+        public event Action<FixSecurity> NewSecurity;
 
         /// <summary>
         /// On market depth changed event
         /// </summary>
-        public event Action<MarketDepth> MarketDepthChanged;
-        public event Action<Security> MarketDepthUnsubscribed;
+        public event Action<FixMarketDepth> MarketDepthChanged;
+
+        /// <summary>
+        /// Market depth unsubscribed event
+        /// </summary>
+        public event Action<string> MarketDepthUnsubscribed;
         
         /// <summary>
         /// Событие получения новой сделки
         /// </summary>
-        public event Action<Trade> NewTrade;
+        public event Action<FixTrade> NewTrade;
 
         /// <summary>
-        /// New portfolio
+        /// New account of balance
         /// </summary>
-        public event Action<Portfolio> NewPortfolio;
+        public event Action<FixAccount> NewAccount;
 
         /// <summary>
-        /// Portfolio changed event
+        /// Account of balance changed
         /// </summary>
-        public event Action<Portfolio> PortfolioChanged;
+        public event Action<FixAccount> AccountChanged;
 
         /// <summary>
         /// New position event
         /// </summary>
-        public event Action<Position> NewPosition;
+        public event Action<FixPosition> NewPosition;
 
         /// <summary>
         /// Position changed event
         /// </summary>
-        public event Action<Position> PositionChanged;
+        public event Action<FixPosition> PositionChanged;
 
         /// <summary>
         /// New order event
         /// </summary>
-        public event Action<Order> NewOrder;
+        public event Action<FixOrder> NewOrder;
 
         /// <summary>
         /// Order changed event
         /// </summary>
-        public event Action<Order> OrderChanged;
+        public event Action<FixOrder> OrderChanged;
 
         /// <summary>
         /// Событие ошибок
         /// </summary>
-        public event Action<OrderFail> OrderPlaceFailed;
+        public event Action<FixOrderFail> OrderPlaceFailed;
 
         /// <summary>
         /// Событие ошибок
         /// </summary>
-        public event Action<OrderFail> OrderCancelFailed;
+        public event Action<FixOrderFail> OrderCancelFailed;
 
         /// <summary>
         /// Событие ошибок
         /// </summary>
-        public event Action<OrderFail> OrderModifyFailed;
+        public event Action<FixOrderFail> OrderModifyFailed;
 
         /// <summary>
         /// New my trade event
         /// </summary>
-        public event Action<MyTrade> NewMyTrade;
+        public event Action<FixMyTrade> NewMyTrade;
         
         /// <summary>
         /// Trades unsubscribed event
         /// </summary>
-        public event Action<Security> TradesUnSubscribed;
+        public event Action<string> TradesUnSubscribed;
 
         /// <summary>
         /// FIX client
@@ -121,7 +124,7 @@ namespace Intelligences.FixProtocol
         /// </summary>
         private SocketInitiator socketInitiator;
 
-        public FIXConnection(Model.Settings settings)
+        public FIXConnection(Model.FixSettings settings)
         {
             SessionSettings sessionSettings = SessionSettingsFactory.Create(settings);
 
@@ -151,8 +154,8 @@ namespace Intelligences.FixProtocol
             this.fixClient.MarketDepthChanged += this.marketDepthChanged;
             this.fixClient.MarketDepthUnsubscribed += this.marketDepthUnsubscribed;
             this.fixClient.NewSecurity += this.newSecurity;
-            this.fixClient.NewPortfolio += this.newPortfolio;
-            this.fixClient.PortfolioChanged += this.portfolioChanged;
+            this.fixClient.NewAccount += this.newAccount;
+            this.fixClient.AccountChanged += this.accountChanged;
             this.fixClient.NewPosition += this.newPosition;
             this.fixClient.PositionChanged += this.positionChanged;
             this.fixClient.NewTrade += this.newTrade;
@@ -216,6 +219,36 @@ namespace Intelligences.FixProtocol
             return this.fixClient.IsConnected();
         }
 
+        public void RequestSecurities()
+        {
+            if (!this.IsConnected())
+            {
+                throw new InvalidOperationException("Connection not established");
+            }
+
+            this.fixClient.RequestSecurities();
+        }
+
+        public void AccountSummaryRequest()
+        {
+            if (!this.IsConnected())
+            {
+                throw new InvalidOperationException("Connection not established");
+            }
+
+            this.fixClient.AccountSummaryRequest();
+        }
+
+        public void OrderMassStatusRequest()
+        {
+            if (!this.IsConnected())
+            {
+                throw new InvalidOperationException("Connection not established");
+            }
+
+            this.fixClient.OrderMassStatusRequest();
+        }
+
         /// <summary>
         /// Поиск инструментов
         /// </summary>
@@ -233,69 +266,55 @@ namespace Intelligences.FixProtocol
             }
         }
 
-        public void CreateSecurity(SecurityData securityData)
-        {
-            this.fixClient.CreateSecurity(securityData);
-        }
-
         /// <summary>
-        /// Load all securities
+        /// Subscribe to market depth
         /// </summary>
-        internal void LoadAllSecurities()
+        /// <param name="securityId">Security identifier</param>
+        public void SubscribeMarketDepth(string securityId)
         {
             if (!this.IsConnected())
             {
                 throw new InvalidOperationException("Connection not established");
             }
 
-            this.fixClient.LoadAllSecurities();
+            if (String.IsNullOrEmpty(securityId))
+            {
+                return;
+            }
+
+            this.fixClient.SubscribeMarketDepth(securityId);
         }
 
-        /// <summary>
-        /// Подписаться на изменения стакана
-        /// </summary>
-        /// <param name="security">Инструмент <see cref="Security"/></param>
-        public void SubscribeMarketDepth(Security security)
+        public void UnsubscribeMarketDepth(string securityId)
         {
             if (!this.IsConnected())
             {
                 throw new InvalidOperationException("Connection not established");
             }
 
-            if (security != null)
+            if (String.IsNullOrEmpty(securityId))
             {
-                this.fixClient.SubscribeMarketDepth(security);
+                return;
             }
+
+            this.fixClient.UnsubscribeMarketDepth(securityId);
+
         }
 
-        public void UnsubscribeMarketDepth(Security security)
-        {
-            if (!this.IsConnected())
-            {
-                throw new InvalidOperationException("Connection not established");
-            }
-
-            if (security != null)
-            {
-                this.fixClient.UnsubscribeMarketDepth(security);
-            }
-        }
-
-        public void PlaceOrder(Order order)
+        public void PlaceOrder(FixOrder order)
         {
             if (order is null)
             {
                 throw new ArgumentNullException("Order can't be null");
             }
 
-            order.SetTransactionId(Guid.NewGuid().ToString());
-            order.SetClientOrderId(Guid.NewGuid().ToString());
-            order.SetState(OrderState.Pending);
+            order.ClientOrderId = order.ClientOrderId ?? Guid.NewGuid().ToString();
+            order.State = FixOrderState.PendingRegistration;
 
             this.fixClient.PlaceOrder(order);
         }
 
-        public void CancelOrder(Order order)
+        public void CancelOrder(FixOrder order)
         {
             if (order is null)
             {
@@ -305,7 +324,7 @@ namespace Intelligences.FixProtocol
             this.fixClient.CancelOrder(order);
         }
 
-        public void ModifyOrder(Order order)
+        public void ModifyOrder(FixOrder order)
         {
             if (order is null)
             {
@@ -325,17 +344,17 @@ namespace Intelligences.FixProtocol
             this.fixClient.SubscribeOrdersUpdates();
         }
 
-        public void SubscribeTrades(Security security)
+        public void SubscribeTrades(string securityId)
         {
-            this.fixClient.SubscribeTrades(security);
+            this.fixClient.SubscribeTrades(securityId);
         }
 
-        public void UnSubscribeTrades(Security security)
+        public void UnSubscribeTrades(string securityId)
         {
-            this.fixClient.UnSubscribeTrades(security);
+            this.fixClient.UnSubscribeTrades(securityId);
         }
 
-        private void newSecurity(Security security)
+        private void newSecurity(FixSecurity security)
         {
             try
             {
@@ -347,11 +366,11 @@ namespace Intelligences.FixProtocol
             }
         }
 
-        private void marketDepthUnsubscribed(Security security)
+        private void marketDepthUnsubscribed(string securityId)
         {
             try
             {
-                this.MarketDepthUnsubscribed?.Invoke(security);
+                this.MarketDepthUnsubscribed?.Invoke(securityId);
             }
             catch (Exception e)
             {
@@ -359,7 +378,7 @@ namespace Intelligences.FixProtocol
             }
         }
 
-        private void marketDepthChanged(MarketDepth marketDepth)
+        private void marketDepthChanged(FixMarketDepth marketDepth)
         {
             try
             {
@@ -395,62 +414,62 @@ namespace Intelligences.FixProtocol
             }
         }
 
-        private void newPortfolio(Portfolio portfolio)
+        private void newAccount(FixAccount portfolio)
         {
-            this.NewPortfolio?.Invoke(portfolio);
+            this.NewAccount?.Invoke(portfolio);
         }
 
-        private void portfolioChanged(Portfolio portfolio)
+        private void accountChanged(FixAccount portfolio)
         {
-            this.PortfolioChanged?.Invoke(portfolio);
+            this.AccountChanged?.Invoke(portfolio);
         }
 
-        private void newPosition(Position position)
+        private void newPosition(FixPosition position)
         {
             this.NewPosition?.Invoke(position);
         }
 
-        private void positionChanged(Position position)
+        private void positionChanged(FixPosition position)
         {
             this.PositionChanged?.Invoke(position);
         }
 
-        private void newTrade(Trade trade)
+        private void newTrade(FixTrade trade)
         {
             this.NewTrade?.Invoke(trade);
         }
 
-        private void tradesUnSubscribed(Security security)
+        private void tradesUnSubscribed(string securityId)
         {
-            this.TradesUnSubscribed?.Invoke(security);
+            this.TradesUnSubscribed?.Invoke(securityId);
         }
 
-        private void newOrder(Order order)
+        private void newOrder(FixOrder order)
         {
             this.NewOrder?.Invoke(order);
         }
 
-        private void orderChanged(Order order)
+        private void orderChanged(FixOrder order)
         {
             this.OrderChanged?.Invoke(order);
         }
 
-        private void newMyTrade(MyTrade myTrade)
+        private void newMyTrade(FixMyTrade myTrade)
         {
             this.NewMyTrade?.Invoke(myTrade);
         }
 
-        private void orderPlaceFailed(OrderFail orderFail)
+        private void orderPlaceFailed(FixOrderFail orderFail)
         {
             this.OrderPlaceFailed?.Invoke(orderFail);
         }
 
-        private void orderCancelFailed(OrderFail orderFail)
+        private void orderCancelFailed(FixOrderFail orderFail)
         {
             this.OrderCancelFailed?.Invoke(orderFail);
         }
 
-        private void orderModifyFailed(OrderFail orderFail)
+        private void orderModifyFailed(FixOrderFail orderFail)
         {
             this.OrderModifyFailed?.Invoke(orderFail);
         }

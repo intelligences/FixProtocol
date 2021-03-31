@@ -33,7 +33,7 @@ namespace Intelligences.FixProtocol
         /// <summary>
         /// On market depth changed event
         /// </summary>
-        event Action<MarketDepth> MarketDepthChanged;
+        event Action<FixMarketDepth> MarketDepthChanged;
 
         /// <summary>
         /// Connect to protocol
@@ -46,15 +46,15 @@ namespace Intelligences.FixProtocol
         void Disconnect();
 
         /// <summary>
-        /// Подписаться на изменения стакана
+        /// Subscribe to market depth
         /// </summary>
-        /// <param name="security">Инструмент <see cref="Security"/></param>
-        void SubscribeMarketDepth(Security security);
+        /// <param name="securityId">Security identifier</param>
+        void SubscribeMarketDepth(string securityId);
 
         /// <summary>
-        /// Отписаться от изменений стакана
+        /// Unsubscribe from MD
         /// </summary>
-        /// <param name="security">Инструмент <see cref="Security"/></param>
-        void UnsubscribeMarketDepth(Security security);
+        /// <param name="securityId">Security identifier</param>
+        void UnsubscribeMarketDepth(string securityId);
     }
 }

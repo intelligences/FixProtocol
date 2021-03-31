@@ -3,7 +3,7 @@
     /// <summary>
     /// 
     /// </summary>
-    enum MarketDataType
+    enum FixMarketDataType
     {
         /// <summary>
         /// 

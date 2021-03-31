@@ -1,13 +1,13 @@
 ﻿using AllocationInstruction = QuickFix.FIX44.AllocationInstruction;
 using ExecutionReport = QuickFix.FIX44.ExecutionReport;
 using Intelligences.FixProtocol.Model;
-using MarketDepth = Intelligences.FixProtocol.Model.MarketDepth;
+using MarketDepth = Intelligences.FixProtocol.Model.FixMarketDepth;
 using MarketDataSnapshotFullRefresh = QuickFix.FIX44.MarketDataSnapshotFullRefresh;
 using MarketDataRequestReject = QuickFix.FIX44.MarketDataRequestReject;
 using QuickFix.Fields;
 using QuickFix;
-using Settings = Intelligences.FixProtocol.Model.Settings;
-using Security = Intelligences.FixProtocol.Model.Security;
+using FixSettings = Intelligences.FixProtocol.Model.FixSettings;
+using FixSecurity = Intelligences.FixProtocol.Model.FixSecurity;
 using SecurityList = QuickFix.FIX44.SecurityList;
 using System;
 using System.Collections.Generic;
@@ -18,9 +18,11 @@ using Intelligences.FixProtocol.Filter;
 using SecurityType = Intelligences.FixProtocol.Enum.SecurityType;
 using Intelligences.FixProtocol.Fields;
 using Tags = QuickFix.Fields.Tags;
-using Intelligences.FixProtocol.DTO;
-using Intelligences.FixProtocol.Model.Conditions;
 using Intelligences.FixProtocol.Exceptions;
+using System.Threading.Tasks;
+using System.Collections.Concurrent;
+using System.Linq;
+using Intelligences.FixProtocol.Service;
 
 namespace Intelligences.FixProtocol.Client.Dialects
 {
@@ -29,67 +31,70 @@ namespace Intelligences.FixProtocol.Client.Dialects
         /// <summary>
         /// New portfolio event
         /// </summary>
-        public event Action<Portfolio> NewPortfolio;
+        public event Action<FixAccount> NewAccount;
 
         /// <summary>
         /// Portfolio changed event
         /// </summary>
-        public event Action<Portfolio> PortfolioChanged;
+        public event Action<FixAccount> AccountChanged;
 
         /// <summary>
         /// New position event
         /// </summary>
-        public event Action<Position> NewPosition;
+        public event Action<FixPosition> NewPosition;
 
         /// <summary>
         /// Position changed event
         /// </summary>
-        public event Action<Position> PositionChanged;
+        public event Action<FixPosition> PositionChanged;
 
         /// <summary>
         /// New order event
         /// </summary>
-        public event Action<Order> NewOrder;
+        public event Action<FixOrder> NewOrder;
 
         /// <summary>
         /// Order changed event
         /// </summary>
-        public event Action<Order> OrderChanged;
+        public event Action<FixOrder> OrderChanged;
 
         /// <summary>
         /// Order place failed event
         /// </summary>
-        public event Action<OrderFail> OrderPlaceFailed;
+        public event Action<FixOrderFail> OrderPlaceFailed;
 
         /// <summary>
         /// Order cancel failed event
         /// </summary>
-        internal event Action<OrderFail> OrderCancelFailed;
+        internal event Action<FixOrderFail> OrderCancelFailed;
 
         /// <summary>
         /// Order modify failed event
         /// </summary>
-        internal event Action<OrderFail> OrderModifyFailed;
+        internal event Action<FixOrderFail> OrderModifyFailed;
 
         /// <summary>
         /// New my trade event
         /// </summary>
-        public event Action<MyTrade> NewMyTrade;
+        public event Action<FixMyTrade> NewMyTrade;
 
         /// <summary>
         /// New security event
         /// </summary>
-        public event Action<Security> NewSecurity;
+        public event Action<FixSecurity> NewSecurity;
 
         /// <summary>
         /// New Trade event
         /// </summary>
-        public event Action<Trade> NewTrade;
+        public event Action<FixTrade> NewTrade;
+
+        internal event Action SecuritiesLoadingProcess;
+        internal event Action SecuritiesLoaded;
 
         /// <summary>
         /// Trades unsubscribed event
         /// </summary>
-        public event Action<Security> TradesUnSubscribed;
+        public event Action<string> TradesUnSubscribed;
 
         /// <summary>
         /// Market depth changed
@@ -99,22 +104,27 @@ namespace Intelligences.FixProtocol.Client.Dialects
         /// <summary>
         /// Market depth unsubscribed
         /// </summary>
-        public event Action<Security> MarketDepthUnsubscribed;
+        public event Action<string> MarketDepthUnsubscribed;
 
         /// <summary>
         /// List of portfolios
         /// </summary>
-        private readonly Dictionary<string, Portfolio> portfolios = new Dictionary<string, Portfolio>();
+        private readonly Dictionary<string, FixAccount> accounts = new Dictionary<string, FixAccount>();
+
+        /// <summary>
+        /// List of portfolios
+        /// </summary>
+        private readonly Dictionary<string, FixPosition> positions = new Dictionary<string, FixPosition>();
 
         /// <summary>
         /// List of securities
         /// </summary>
-        private readonly Dictionary<string, Security> securities = new Dictionary<string, Security>();
+        private readonly ConcurrentDictionary<string, FixSecurity> securities = new ConcurrentDictionary<string, FixSecurity>();
 
         /// <summary>
         /// List of registered orders
         /// </summary>
-        private readonly Dictionary<string, Order> orders = new Dictionary<string, Order>();
+        private readonly ConcurrentDictionary<string, FixOrder> orders = new ConcurrentDictionary<string, FixOrder>();
 
         /// <summary>
         /// List of market depths
@@ -127,19 +137,10 @@ namespace Intelligences.FixProtocol.Client.Dialects
         private readonly List<string> tradeSubscriptions = new List<string>();
 
         /// <summary>
-        /// Number of loaded positions
-        /// </summary>
-        private readonly Dictionary<string, int> loadedPositionsCount = new Dictionary<string, int>();
-
-        /// <summary>
-        /// List with statuses, is the item currently loaded
-        /// </summary>
-        private readonly Dictionary<string, bool> isNewPortfolioInitialized = new Dictionary<string, bool>();
-
-        /// <summary>
         /// Pending orders
         /// </summary>
-        private readonly Dictionary<string, Order> pendingOrders = new Dictionary<string, Order>();
+        private readonly Dictionary<string, FixOrder> pendingOrders = new Dictionary<string, FixOrder>();
+        private readonly string requestSecuritiesId = "request-all-securities";
 
         /// <summary>
         /// FIX session
@@ -149,7 +150,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
         /// <summary>
         /// Application settings
         /// </summary>
-        private readonly Settings settings;
+        private readonly FixSettings settings;
 
         /// <summary>
         /// Account session ID
@@ -160,7 +161,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
         /// Constructor
         /// </summary>
         /// <param name="settings"></param>
-        public ExanteDialect(Settings settings)
+        public ExanteDialect(FixSettings settings)
         {
             this.settings = settings;
             this.accountRequestId = Guid.NewGuid().ToString();
@@ -177,11 +178,9 @@ namespace Intelligences.FixProtocol.Client.Dialects
         /// <summary>
         /// Subscribe on market depth
         /// </summary>
-        /// <param name="security">Security</param>
-        public void SubscribeMarketDepth(Security security)
+        /// <param name="securityId">Security identifier</param>
+        public void SubscribeMarketDepth(string securityId)
         {
-            string securityId = security.GetId();
-
             QuickFix.FIX44.MarketDataRequest marketDataRequest = new QuickFix.FIX44.MarketDataRequest(
                 new MDReqID(securityId),
                 new SubscriptionRequestType(SubscriptionRequestType.SNAPSHOT_PLUS_UPDATES),
@@ -226,7 +225,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
 
             if (!this.marketDepths.ContainsKey(securityId))
             {
-                this.marketDepths.Add(securityId, new Model.MarketDepth(security, DateTimeOffset.UtcNow));
+                this.marketDepths.Add(securityId, new FixMarketDepth(securityId, DateTimeOffset.UtcNow));
             }
 
             Session.SendToTarget(marketDataRequest, this.session.SessionID);
@@ -235,11 +234,9 @@ namespace Intelligences.FixProtocol.Client.Dialects
         /// <summary>
         /// Unsubscribe from Market Depth
         /// </summary>
-        /// <param name="security"></param>
-        public void UnsubscribeMarketDepth(Security security)
+        /// <param name="securityId">Sucurity identifier</param>
+        public void UnsubscribeMarketDepth(string securityId)
         {
-            string securityId = security.GetId();
-
             if (!this.marketDepths.ContainsKey(securityId))
             {
                 return;
@@ -271,24 +268,24 @@ namespace Intelligences.FixProtocol.Client.Dialects
         /// Place new order on the exchange
         /// </summary>
         /// <param name="order">New order</param>
-        public void PlaceOrder(Order order)
+        public void PlaceOrder(FixOrder order)
         {
             if (order is null)
             {
                 throw new ArgumentNullException("Order can't be null");
             }
 
-            Security security = order.GetSecurity();
-            string clientOrderId = order.GetClientOrderId();
+            string security = order.SecurityId;
+            string clientOrderId = order.ClientOrderId;
 
-            order.SetCreatedAt(DateTimeOffset.UtcNow);
+            order.CreatedAt = DateTimeOffset.UtcNow;
 
             QuickFix.FIX44.NewOrderSingle newFixOrder = new QuickFix.FIX44.NewOrderSingle(
                 new ClOrdID(clientOrderId),
-                new Symbol(security.GetId()),
-                new Side(order.GetDirection().ToFixOrderSide()),
-                new TransactTime(order.GetCreatedAt().DateTime),
-                new OrdType(order.GetFixOrderType())
+                new Symbol(security),
+                new Side(order.Direction.ToFixOrderSide()),
+                new TransactTime(order.CreatedAt.DateTime),
+                new OrdType(order.ToFixOrderType())
             );
 
             this.fillOrderProperties(newFixOrder, order);
@@ -296,6 +293,58 @@ namespace Intelligences.FixProtocol.Client.Dialects
             this.pendingOrders.Add(clientOrderId, order);
 
             Session.SendToTarget(newFixOrder, this.session.SessionID);
+        }
+
+        /// <summary>
+        /// Request list of all securities
+        /// </summary>
+        /// <remarks>If cache enabled, load from cache and async reload</remarks>
+        public void RequestSecurities()
+        {
+            this.SecuritiesLoadingProcess?.Invoke();
+
+            if (this.settings.IsSecuritiesCacheEnabled())
+            {
+                this.loadSecuritiesFromCache();
+
+                Task.Run(() => {
+                    this.requestAllSecurities("update");
+                });
+            }
+            else
+            {
+                this.requestAllSecurities();
+            }
+        }
+
+        private void loadSecuritiesFromCache()
+        {
+            List<FixSecurity> securitiesCache = BinaryStorage.ReadFromBinaryFile<List<FixSecurity>>(this.settings.GetSecuritiesCacheFileName());
+
+            if (securitiesCache is null)
+            {
+                return;
+            }
+
+            if (securitiesCache.Count > 0)
+            {
+                foreach (var security in securitiesCache)
+                {
+                    string securityId = security.Id;
+                    if (!this.securities.ContainsKey(securityId))
+                    {
+                        this.securities.TryAdd(securityId, security);
+                    }
+                    else
+                    {
+                        this.securities[securityId] = security;
+                    }
+
+                    this.NewSecurity(security);
+                }
+
+                this.SecuritiesLoaded?.Invoke();
+            }
         }
 
         /// <summary>
@@ -338,90 +387,26 @@ namespace Intelligences.FixProtocol.Client.Dialects
             Session.SendToTarget(message, this.session.SessionID);
         }
 
-        public void CreateSecurity(SecurityData securityData)
+        private void requestAllSecurities(string requestId = null)
         {
-            if (securityData is null)
-            {
-                throw new ArgumentNullException("SecurityData can't be null");
-            }
+            QuickFix.FIX44.SecurityListRequest message = new QuickFix.FIX44.SecurityListRequest(
+                new SecurityReqID(requestId != null ? requestId : this.requestSecuritiesId),
+                new SecurityListRequestType(SecurityListRequestType.ALL_SECURITIES)
+            );
 
-            string code = securityData.Code;
-            string board = securityData.Board;
-            SecurityType type = securityData.Type;
-            string currency = securityData.Currency;
-            decimal priceStep = securityData.PriceStep;
-            decimal stepPrice = securityData.StepPrice;
-            decimal volumeStep = securityData.VolumeStep;
-            DateTimeOffset? expiryDate = securityData.ExpiryDate;
-            int digits = securityData.Decimals;
-
-            if (!this.securities.ContainsKey(code))
-            {
-                this.securities.Add(code, new Security(code));
-            }
-
-            Security security = this.securities[code];
-
-            if (code != default)
-            {
-                security.SetCode(code);
-            }
-
-            if (board != default)
-            {
-                security.SetBoard(board);
-            }
-
-            if (type != default)
-            {
-                security.SetSecurityType(type);
-            }
-
-            if (currency != default)
-            {
-                security.SetCurrency(currency);
-            }
-
-            if (priceStep != default)
-            {
-                security.SetPriceStep(priceStep);
-            }
-
-            if (stepPrice != default)
-            {
-                security.SetStepPrice(stepPrice);
-            }
-
-            if (expiryDate != null)
-            {
-                security.SetExpiryDate((DateTimeOffset) expiryDate);
-            }
-
-            if (digits != default)
-            {
-                security.SetDigits(digits);
-            }
-
-            if (volumeStep != default)
-            {
-                security.SetVolumeStep(volumeStep);
-            }
-
-            this.NewSecurity(security);
+            Session.SendToTarget(message, this.session.SessionID);
         }
 
         /// <summary>
         /// Subscribe Trades
         /// </summary>
-        /// <param name="security">Security <see cref="Security"/></param>
-        public void SubscribeTrades(Security security)
+        /// <param name="securityId">Security identifier</param>
+        public void SubscribeTrades(string securityId)
         {
-            if (security is null)
+            if (String.IsNullOrEmpty(securityId))
             {
                 throw new ArgumentNullException("Security can't be null");
             }
-
-            string securityId = security.GetId();
 
             if (!this.tradeSubscriptions.Contains(securityId))
             {
@@ -432,15 +417,13 @@ namespace Intelligences.FixProtocol.Client.Dialects
         /// <summary>
         /// UnSubscribe Trades
         /// </summary>
-        /// <param name="security">Security <see cref="Security"/></param>
-        public void UnSubscribeTrades(Security security)
+        /// <param name="securityId">Security identifier</param>
+        public void UnSubscribeTrades(string securityId)
         {
-            if (security is null)
+            if (String.IsNullOrEmpty(securityId))
             {
                 throw new ArgumentNullException("Security can't be null");
             }
-
-            string securityId = security.GetId();
 
             if (!this.tradeSubscriptions.Contains(securityId))
             {
@@ -449,31 +432,30 @@ namespace Intelligences.FixProtocol.Client.Dialects
 
             this.tradeSubscriptions.Remove(securityId);
 
-            this.TradesUnSubscribed(security);
+            this.TradesUnSubscribed(securityId);
         }
 
         /// <summary>
         /// Modify order
         /// </summary>
-        /// <param name="order">Order <see cref="Order"/></param>
-        public void ModifyOrder(Order order)
+        /// <param name="order">Order <see cref="FixOrder"/></param>
+        public void ModifyOrder(FixOrder order)
         {
             if (order is null)
             {
                 throw new ArgumentNullException("Order can't be null");
             }
 
-            string clientOrderId = order.GetClientOrderId();
-            Security security = order.GetSecurity();
-            string securityId = security.GetId();
+            string clientOrderId = order.ClientOrderId;
+            string security = order.SecurityId;
 
             QuickFix.FIX44.OrderCancelReplaceRequest request = new QuickFix.FIX44.OrderCancelReplaceRequest(
                 new OrigClOrdID(clientOrderId),
                 new ClOrdID(Guid.NewGuid().ToString()),
-                new Symbol(securityId),
-                new Side(order.GetDirection().ToFixOrderSide()),
-                new TransactTime(order.GetCreatedAt().DateTime),
-                new OrdType(order.GetFixOrderType())
+                new Symbol(security),
+                new Side(order.Direction.ToFixOrderSide()),
+                new TransactTime(order.CreatedAt.DateTime),
+                new OrdType(order.ToFixOrderType())
             );
 
             this.fillOrderProperties(request, order);
@@ -484,24 +466,23 @@ namespace Intelligences.FixProtocol.Client.Dialects
         /// <summary>
         /// Cancel order
         /// </summary>
-        /// <param name="order">Order <see cref="Order"/></param>
-        public void CancelOrder(Order order)
+        /// <param name="order">Order <see cref="FixOrder"/></param>
+        public void CancelOrder(FixOrder order)
         {
-            string clientOrderId = order.GetClientOrderId();
-            Security security = order.GetSecurity();
-            string securityId = security.GetId();
+            string clientOrderId = order.ClientOrderId;
+            string security = order.SecurityId;
 
             QuickFix.FIX44.OrderCancelRequest cancelOrder = new QuickFix.FIX44.OrderCancelRequest(
                 new OrigClOrdID(clientOrderId),
                 new ClOrdID(Guid.NewGuid().ToString()),
-                new Symbol(securityId),
-                new Side(order.GetDirection().ToFixOrderSide()),
-                new TransactTime(order.GetCreatedAt().DateTime)
+                new Symbol(security),
+                new Side(order.Direction.ToFixOrderSide()),
+                new TransactTime(order.CreatedAt.DateTime)
             );
 
             cancelOrder.SetField(new SecurityIDSource("111"));
-            cancelOrder.SetField(new SecurityID(securityId));
-            cancelOrder.SetField(new OrderQty(order.GetQuantity()));
+            cancelOrder.SetField(new SecurityID(security));
+            cancelOrder.SetField(new OrderQty(order.Quantity));
 
             Session.SendToTarget(cancelOrder, this.session.SessionID);
         }
@@ -551,8 +532,9 @@ namespace Intelligences.FixProtocol.Client.Dialects
             SecurityID securityIdField = new SecurityID();
             LongQty longQtyField = new LongQty();
             ShortQty shortQtyField = new ShortQty();
+            AvgPx avgPxField = new AvgPx();
             SecurityExchange securityExchangeField = new SecurityExchange();
-            Account accountField = new Account();
+            QuickFix.Fields.Account accountField = new QuickFix.Fields.Account();
             Symbol symbolField = new Symbol();
             CFICode cfiCodeField = new CFICode();
             TotalNetValue totalNetValueField = new TotalNetValue();
@@ -588,20 +570,31 @@ namespace Intelligences.FixProtocol.Client.Dialects
             string securityId = securityIdField.getValue();
             string symbol = symbolField.getValue();
             string cfiCode = cfiCodeField.getValue();
+            var secType = cfiCode.ToSecurityType();
+            decimal averagePrice = 0;
 
-            if (!this.portfolios.ContainsKey(account))
+            if (message.IsSetField(avgPxField))
             {
-                this.portfolios.Add(account, new Portfolio(account, totalNetValue));
-                this.loadedPositionsCount.Add(account, 0);
-                this.isNewPortfolioInitialized.Add(account, false);
+                averagePrice = message.GetField(avgPxField).getValue();
             }
 
-            this.loadedPositionsCount[account] += 1;
+            bool isNewAccount = false;
+            if (!this.accounts.ContainsKey(account))
+            {
+                this.accounts.Add(account, new FixAccount(account, currency, totalNetValue));
+                isNewAccount = true;
+            }
 
-            Portfolio portfolio = this.portfolios[account];
+            FixAccount fixAccount = this.accounts[account];
 
-            portfolio.SetUsedMargin(usedMargin);
-            portfolio.SetCurrentValue(totalNetValue);
+            fixAccount.TotalNewValue = totalNetValue;
+            fixAccount.UsedMargin = usedMargin;
+
+            if (isNewAccount) {
+                this.NewAccount(fixAccount);
+            } else {
+                this.AccountChanged(fixAccount);
+            }
 
             decimal currentValue = 0;
             decimal longQty = longQtyField.getValue();
@@ -617,48 +610,28 @@ namespace Intelligences.FixProtocol.Client.Dialects
                 currentValue = -shortQty;
             }
 
-            Security security = this.getOrCreateSecurity(securityId);
-            Position position = portfolio.GetPosition(security);
-
             bool isNewPosition = false;
-            if (position == null)
+            if (!this.positions.ContainsKey(securityId))
             {
+                this.positions.Add(securityId, new FixPosition(account, securityId, currency, currentValue));
                 isNewPosition = true;
+            }
 
-                position = new Position(portfolio, security, currentValue, currency);
+            FixPosition position = this.positions[securityId];
 
-                portfolio.AddPosition(position);
+            position.UpdatedAt = DateTimeOffset.UtcNow;
+            position.CurrentValue = currentValue;
+            position.ProfitAndLoss = profitAndLoss;
+            position.AveragePrice = averagePrice;
 
+            if (isNewPosition)
+            {
                 this.NewPosition(position);
             }
 
-            position = portfolio.GetPosition(security);
-
-            position.SetUpdatedAt(DateTimeOffset.UtcNow);
-            position.SetCurrentValue(currentValue);
-            position.SetProfitAndLoss(profitAndLoss);
-
-            if (isNewPosition == false)
+            if (isNewPosition)
             {
                 this.PositionChanged(position);
-            }
-
-            int loadedPositionsCount = this.loadedPositionsCount[account];
-            if (loadedPositionsCount != positionsCount)
-            {
-                return;
-            }
-
-            if (this.isNewPortfolioInitialized.ContainsKey(account) && this.isNewPortfolioInitialized[account] == true)
-            {
-                this.loadedPositionsCount[account] = 0;
-                this.PortfolioChanged(this.portfolios[account]);
-            }
-            else
-            {
-                this.loadedPositionsCount[account] = 0;
-                this.isNewPortfolioInitialized[account] = true;
-                this.NewPortfolio(this.portfolios[account]);
             }
         }
 
@@ -675,20 +648,23 @@ namespace Intelligences.FixProtocol.Client.Dialects
 
             if (orderId != "NONE")
             {
-                Order order;
+                FixOrder order;
 
                 ClOrdID clOrdID = new ClOrdID();
                 OrderQty orderQty = new OrderQty();
                 Side side = new Side();
-                Account account = new Account();
+                QuickFix.Fields.Account account = new QuickFix.Fields.Account();
                 SecurityID securityID = new SecurityID();
                 OrdStatus ordStatus = new OrdStatus();
                 OrdType ordType = new OrdType();
                 Price priceField = new Price();
+                StopPx stopPxField = new StopPx();
                 LastPx lastPx = new LastPx();
                 LastQty lastQty = new LastQty();
                 CumQty cumQty = new CumQty();
+                AvgPx avgPxField = new AvgPx();
                 Text text = new Text();
+                TransactTime transactionTimeField = new TransactTime();
                 ExanteOrdRejReason exanteOrdRejReason = new ExanteOrdRejReason();
 
                 message.GetField(clOrdID);
@@ -720,23 +696,34 @@ namespace Intelligences.FixProtocol.Client.Dialects
                     message.GetField(cumQty);
                 }
 
+                if (message.IsSetStopPx())
+                {
+                    message.GetField(stopPxField);
+                }
+
+                if (message.IsSetTransactTime())
+                {
+                    message.GetField(transactionTimeField);
+                }
+
+                if (message.IsSetAvgPx())
+                {
+                    message.GetField(avgPxField);
+                }
+
                 string clientOrderid = clOrdID.getValue();
                 string accountName = account.getValue();
                 string securityId = securityID.getValue();
-                OrderType orderType = ordType.ToOrderType();
-                OrderState orderState = ordStatus.ToOrderState();
+                FixOrderType orderType = ordType.ToOrderType();
+                FixOrderState orderState = ordStatus.ToOrderState();
                 decimal quantity = orderQty.getValue();
                 decimal price = priceField.getValue();
+                decimal stopPrice = stopPxField.getValue();
                 decimal lastPrice = lastPx.getValue();
                 decimal lastQuantity = lastQty.getValue();
                 decimal filledQty = cumQty.getValue();
-
-                if (!this.portfolios.TryGetValue(accountName, out Portfolio portfolio))
-                {
-                    return;
-                }
-
-                Security security = this.getOrCreateSecurity(securityId);
+                decimal filledAvgPrice = avgPxField.getValue();
+                DateTime transactTime = transactionTimeField.getValue();
 
                 order = this.findOrder(clientOrderid, orderId);
 
@@ -744,67 +731,92 @@ namespace Intelligences.FixProtocol.Client.Dialects
 
                 if (order == null)
                 {
-                    if (orderType == OrderType.Market)
+                    if (orderType == FixOrderType.Market)
                     {
-                        order = new MarketOrder(
+                        order = new FixMarketOrder(
                             quantity,
                             side.ToDirection(),
-                            portfolio,
-                            security
+                            accountName,
+                            securityId
                         );
                     }
-                    else
+                    else if (orderType == FixOrderType.Limit)
                     {
-                        order = new LimitOrder(
+                        order = new FixLimitOrder(
                             price,
                             quantity,
                             side.ToDirection(),
-                            portfolio,
-                            security
+                            accountName,
+                            securityId
+                        );
+                    }
+                    else if (orderType == FixOrderType.StopMarket)
+                    {
+                        order = new FixStopMarketOrder(
+                            price,
+                            stopPrice,
+                            quantity,
+                            side.ToDirection(),
+                            accountName,
+                            securityId
+                        );
+                    }
+                    else if (orderType == FixOrderType.StopLimit)
+                    {
+                        order = new FixStopLimitOrder(
+                            price,
+                            stopPrice,
+                            quantity,
+                            side.ToDirection(),
+                            accountName,
+                            securityId
                         );
                     }
 
-                    order.SetTransactionId(Guid.NewGuid().ToString());
-                    order.SetClientOrderId(clientOrderid);
-                    order.SetState(OrderState.Pending);
+                    order.ClientOrderId = clientOrderid;
+                    order.State = FixOrderState.PendingRegistration;
                 }
 
-                order.SetOrderId(orderId);
-                order.SetQuantity(quantity);
-                order.SetFilledQty(filledQty);
-                order.SetPrice(price);
-                order.SetClientOrderId(clientOrderid);
+                order.ClientOrderId = clientOrderid;
+                order.OrderId = orderId;
+                order.Quantity = quantity;
+                order.FilledQty = filledQty;
+                order.FilledAveragePrice = filledAvgPrice;
+                order.Price = price;
+                order.StopPrice = stopPrice;
 
-                if (orderState == OrderState.Failed)
+                if (orderState == FixOrderState.Rejected)
                 {
                     message.GetField(text);
                     message.GetField(exanteOrdRejReason);
 
-                    this.OrderPlaceFailed(new OrderFail(order, new OrderException(text.ToString())));
+                    this.OrderPlaceFailed(new FixOrderFail(order, new OrderException(text.ToString())));
+                }
+
+                order.State = orderState;
+                order.CreatedAt = dateTime;
+
+                if (transactTime != default)
+                {
+                    order.UpdatedAt = transactTime;
                 }
 
                 if (!this.orders.ContainsKey(orderId))
                 {
-                    this.orders.Add(orderId, order);
-
-                    order.SetState(orderState);
-                    order.SetCreatedAt(dateTime);
+                    this.orders.TryAdd(orderId, order);
 
                     this.NewOrder(order);
                 }
                 else
                 {
-                    order.SetState(orderState);
-                    order.SetUpdatedAt(dateTime);
-
-                    if (orderState == OrderState.PartialFilled || orderState == OrderState.Filled)
+                    if (orderState == FixOrderState.PartialFilled || orderState == FixOrderState.Filled)
                     {
-                        this.NewMyTrade(new MyTrade(new Trade(security, lastPrice, lastQuantity, dateTime), order));
+                        this.NewMyTrade(new FixMyTrade(new FixTrade(securityId, lastPrice, lastQuantity, dateTime), order));
                     }
 
-                    if (orderState == OrderState.Filled || orderState == OrderState.Failed || orderState == OrderState.Canceled)
+                    if (orderState == FixOrderState.Filled || orderState == FixOrderState.Rejected || orderState == FixOrderState.Canceled)
                     {
-                        this.orders.Remove(orderId);
+                        this.orders.TryRemove(orderId, out _);
                     }
 
                     this.OrderChanged(order);
@@ -830,10 +842,16 @@ namespace Intelligences.FixProtocol.Client.Dialects
                 return;
             }
 
+            SecurityReqID requId = new SecurityReqID();
+            SecurityResponseID responseID = new SecurityResponseID();
+            TotNoRelatedSym totalNumberOfSymbols = new TotNoRelatedSym();
             NoRelatedSym numberOfSymbols = new NoRelatedSym();
             SecurityList.NoRelatedSymGroup securityListGroup = new SecurityList.NoRelatedSymGroup();
 
+            message.GetField(requId);
             message.GetField(numberOfSymbols);
+            message.GetField(totalNumberOfSymbols);
+            message.GetField(responseID);
 
             for (int i = 1; i <= numberOfSymbols.getValue(); i++)
             {
@@ -843,12 +861,10 @@ namespace Intelligences.FixProtocol.Client.Dialects
 
                 if (!this.securities.ContainsKey(securityId))
                 {
-                    this.securities.Add(securityId, new Security(
-                        securityId
-                    ));
+                    this.securities.TryAdd(securityId, new FixSecurity(securityId));
                 }
 
-                Security security = this.securities[securityId];
+                FixSecurity security = this.securities[securityId];
 
                 if (this.securities.ContainsKey(securityId))
                 {
@@ -857,6 +873,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
                     string currency = securityListGroup.Currency.getValue(); // "USD"
                     string cficode = securityListGroup.CFICode.getValue(); // "FXXXXX"
                     decimal contractSize = securityListGroup.ContractMultiplier.getValue(); // 50M
+                    decimal? strikePrice = null; // 50M
                     decimal priceStep = 0; // 0.25M
                     decimal minOrderPrice = 0; // 0.25M
                     decimal lotSize = 0; // 1.0M
@@ -866,6 +883,11 @@ namespace Intelligences.FixProtocol.Client.Dialects
 
                     int attributesCount = securityListGroup.NoInstrAttrib.getValue();
                     AllocationInstruction.NoInstrAttribGroup attributesGroup = new AllocationInstruction.NoInstrAttribGroup();
+
+                    if (securityListGroup.IsSetStrikePrice())
+                    {
+                        strikePrice = securityListGroup.StrikePrice.getValue();
+                    }
 
                     for (int j = 1; j <= attributesCount; j++)
                     {
@@ -902,28 +924,49 @@ namespace Intelligences.FixProtocol.Client.Dialects
                     }
 
                     decimal stepPrice = contractSize * priceStep; // 12.5
-                    int digits = priceStep.PriceStepToNumderOfDigits();
 
-                    security.SetCode(symbol);
-                    security.SetBoard(securityExchange);
-                    security.SetSecurityType(cficode.ToSecurityType());
-                    security.SetCurrency(currency);
-                    security.SetPriceStep(priceStep);
-                    security.SetStepPrice(stepPrice);
-                    security.SetDigits(digits);
-                    security.SetVolumeStep(lotSize);
+                    security.Code = symbol;
+                    security.Board = securityExchange;
+                    security.Type = cficode.ToSecurityType();
+                    security.Currency = currency;
+                    security.PriceStep = priceStep;
+                    security.StepPrice = stepPrice;
+                    security.VolumeStep = lotSize;
+                    security.StrikePrice = strikePrice;
 
                     if (expiryDate != null)
                     {
-                        security.SetExpiryDate(expiryDate);
+                        security.ExpiryDate = expiryDate;
                     }
                 }
 
-                if (this.securities.TryGetValue(securityId, out Security output))
+                if (this.securities.TryGetValue(securityId, out FixSecurity output))
                 {
                     this.NewSecurity(output);
                 }
             }
+
+
+            int totalRows = totalNumberOfSymbols.getValue();
+            int rowsOnResponse = numberOfSymbols.getValue();
+            int currentResponseId = int.Parse(responseID.getValue());
+
+            int totalResponses = (int)Math.Ceiling((decimal)(totalRows / rowsOnResponse));
+
+            if (currentResponseId == totalResponses)
+            {
+                if (this.settings.IsSecuritiesCacheEnabled())
+                {
+                    BinaryStorage.WriteToBinaryFile<List<FixSecurity>>(this.settings.GetSecuritiesCacheFileName(), this.securities.Values.ToList());
+
+                    if (requId.getValue() == this.requestSecuritiesId)
+                    {
+                        this.SecuritiesLoaded?.Invoke();
+                    }
+                }
+            }
+            
+            
         }
 
         /// <summary>
@@ -967,7 +1010,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
                 return;
             }
 
-            Model.MarketDepth marketDepth = this.marketDepths[mdKey];
+            Model.FixMarketDepth marketDepth = this.marketDepths[mdKey];
 
             int noMDEntries = message.NoMDEntries.getValue();
             QuickFix.FIX44.MarketDataSnapshotFullRefresh.NoMDEntriesGroup group = new QuickFix.FIX44.MarketDataSnapshotFullRefresh.NoMDEntriesGroup();
@@ -975,8 +1018,8 @@ namespace Intelligences.FixProtocol.Client.Dialects
             MDEntryPx mdEntryPx = new MDEntryPx();
             MDEntrySize mDEntrySize = new MDEntrySize();
 
-            List<Model.Quote> bids = new List<Model.Quote>();
-            List<Model.Quote> asks = new List<Model.Quote>();
+            List<Model.FixQuote> bids = new List<Model.FixQuote>();
+            List<Model.FixQuote> asks = new List<Model.FixQuote>();
 
             for (int i = 1; i <= noMDEntries; i++)
             {
@@ -995,20 +1038,20 @@ namespace Intelligences.FixProtocol.Client.Dialects
 
                 decimal price = mdEntryPx.getValue();
                 decimal volume = mDEntrySize.getValue();
-                Security security = marketDepth.GetSecurity();
+                string securityId = marketDepth.SecurityId;
 
                 switch (mdEntryType.getValue())
                 {
                     case MDEntryType.BID:
-                        bids.Add(new Model.Quote(price, volume, Direction.Buy));
+                        bids.Add(new Model.FixQuote(price, volume, Direction.Buy));
                         break;
                     case MDEntryType.OFFER:
-                        asks.Add(new Model.Quote(price, volume, Direction.Sell));
+                        asks.Add(new Model.FixQuote(price, volume, Direction.Sell));
                         break;
                     case MDEntryType.TRADE:
-                        if (this.tradeSubscriptions.Contains(security.GetId()))
+                        if (this.tradeSubscriptions.Contains(securityId))
                         {
-                            this.NewTrade(new Trade(security, price, volume, DateTimeOffset.UtcNow));
+                            this.NewTrade(new FixTrade(securityId, price, volume, DateTimeOffset.UtcNow));
                         }
                         break;
 
@@ -1038,9 +1081,9 @@ namespace Intelligences.FixProtocol.Client.Dialects
                 }
             }
 
-            marketDepth.SetAsks(asks);
-            marketDepth.SetBids(bids);
-            marketDepth.SetUpdatedAt(DateTimeOffset.UtcNow);
+            marketDepth.Asks = asks;
+            marketDepth.Bids = bids;
+            marketDepth.UpdatedAt = DateTimeOffset.UtcNow;
 
             if (asks.Count > 0 && bids.Count > 0)
             {
@@ -1060,9 +1103,9 @@ namespace Intelligences.FixProtocol.Client.Dialects
             {
                 this.marketDepths.Remove(securityId);
 
-                if (this.securities.TryGetValue(securityId, out Security output))
+                if (this.securities.TryGetValue(securityId, out _))
                 {
-                    this.MarketDepthUnsubscribed(output);
+                    this.MarketDepthUnsubscribed(securityId);
                 }
             }
         }
@@ -1082,7 +1125,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
 
                 string clientOrderid = clOrdID.getValue();
 
-                Order order = this.findOrder(clientOrderid, orderId);
+                FixOrder order = this.findOrder(clientOrderid, orderId);
 
                 if (order != null)
                 {
@@ -1092,7 +1135,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
                     message.GetField(text);
                     message.GetField(cxlRejReason);
 
-                    this.OrderPlaceFailed(new OrderFail(order, new OrderException(text.ToString())));
+                    this.OrderPlaceFailed(new FixOrderFail(order, new OrderException(text.ToString())));
                 }
             }
         }
@@ -1112,7 +1155,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
 
                 string clientOrderid = clOrdID.getValue();
 
-                Order order = this.findOrder(clientOrderid, orderId);
+                FixOrder order = this.findOrder(clientOrderid, orderId);
 
                 if (order != null)
                 {
@@ -1120,7 +1163,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
 
                     message.GetField(text);
 
-                    this.OrderModifyFailed(new OrderFail(order, new OrderException(text.ToString())));
+                    this.OrderModifyFailed(new FixOrderFail(order, new OrderException(text.ToString())));
                 }
             }
 
@@ -1132,11 +1175,11 @@ namespace Intelligences.FixProtocol.Client.Dialects
         /// </summary>
         /// <param name="securityId"></param>
         /// <returns></returns>
-        private Security getOrCreateSecurity(string securityId)
+        private FixSecurity getOrCreateSecurity(string securityId)
         {
             if (!this.securities.ContainsKey(securityId))
             {
-                this.securities.Add(securityId, new Security(securityId));
+                this.securities.TryAdd(securityId, new FixSecurity(securityId));
             }
 
             return this.securities[securityId];
@@ -1148,9 +1191,9 @@ namespace Intelligences.FixProtocol.Client.Dialects
         /// <param name="clientOrderId"></param>
         /// <param name="orderId"></param>
         /// <returns>Exists order, whitch the placed on exchange</returns>
-        private Order findOrder(string clientOrderId, string orderId)
+        private FixOrder findOrder(string clientOrderId, string orderId)
         {
-            Order order = null;
+            FixOrder order = null;
 
             if (this.pendingOrders.TryGetValue(clientOrderId, out order))
             {
@@ -1172,46 +1215,36 @@ namespace Intelligences.FixProtocol.Client.Dialects
         /// </summary>
         /// <param name="newFixOrder"></param>
         /// <param name="order"></param>
-        private void fillOrderProperties(QuickFix.FIX44.Message newFixOrder, Order order)
+        private void fillOrderProperties(QuickFix.FIX44.Message newFixOrder, FixOrder order)
         {
-            Security security = order.GetSecurity();
-            string securityId = security.GetId();
-            Portfolio portfolio = order.GetPortfolio();
+            string securityId = order.SecurityId;
+            string accountId = order.AccountId;
 
             if (typeof(QuickFix.FIX44.NewOrderSingle) == newFixOrder.GetType())
             {
-                newFixOrder.SetField(new Account(portfolio.GetName()));
-                newFixOrder.SetField(new OrdType(order.GetFixOrderType()));
+                newFixOrder.SetField(new QuickFix.Fields.Account(accountId));
+                newFixOrder.SetField(new OrdType(order.ToFixOrderType()));
             }
 
-            newFixOrder.SetField(new OrderQty(order.GetQuantity()));
+            newFixOrder.SetField(new OrderQty(order.Quantity));
             newFixOrder.SetField(new SecurityIDSource("111")); // TODO exante only
             newFixOrder.SetField(new SecurityID(securityId));
 
-            if (order.GetOrderType() == OrderType.Limit)
+            if (order.Type == FixOrderType.Limit)
             {
-                newFixOrder.SetField(new Price(order.GetPrice()));
+                newFixOrder.SetField(new Price(order.Price));
             }
-            else if (order.GetOrderType() == OrderType.Conditional)
+            else if (order.Type == FixOrderType.StopLimit)
             {
-                IOrderCondition condition = order.GetCondition();
-
-                if (condition.GetType() == typeof(StopLimit))
-                {
-                    newFixOrder.SetField(new Price(order.GetPrice()));
-
-                    StopLimit stopLimitCondition = (StopLimit)condition;
-                    newFixOrder.SetField(new StopPx(stopLimitCondition.GetPrice()));
-                }
-
-                if (condition.GetType() == typeof(StopMarket))
-                {
-                    StopMarket stopLimitCondition = (StopMarket)condition;
-                    newFixOrder.SetField(new StopPx(stopLimitCondition.GetPrice()));
-                }
+                newFixOrder.SetField(new Price(order.Price));
+                newFixOrder.SetField(new StopPx(order.StopPrice));
+            }
+            else if (order.Type == FixOrderType.StopMarket)
+            {
+                newFixOrder.SetField(new StopPx(order.StopPrice));
             }
 
-            newFixOrder.SetField(new TimeInForce(order.GetTimeInForce().ToFixTimeInForce())); ;
+            newFixOrder.SetField(new TimeInForce(order.TimeInForce.ToFixTimeInForce()));
         }
         #endregion PrivateMethods
     }

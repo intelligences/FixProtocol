@@ -4,14 +4,11 @@ using Intelligences.FixProtocol.Enum;
 using Intelligences.FixProtocol.Fields;
 using Intelligences.FixProtocol.Filter;
 using Intelligences.FixProtocol.Model;
-using MarketDepth = Intelligences.FixProtocol.Model.MarketDepth;
 using QuickFix;
 using QuickFix.Fields;
 using System;
 using System.Threading;
 using Tags = QuickFix.Fields.Tags;
-using System.Threading.Tasks;
-using Intelligences.FixProtocol.DTO;
 
 namespace Intelligences.FixProtocol.Client
 {
@@ -28,84 +25,84 @@ namespace Intelligences.FixProtocol.Client
         internal event Action Disconnected;
 
         /// <summary>
-        /// New portfolio event
+        /// New account of balance
         /// </summary>
-        internal event Action<Portfolio> NewPortfolio;
+        internal event Action<FixAccount> NewAccount;
 
         /// <summary>
-        /// Portfolio changed event
+        /// Account of balance changed
         /// </summary>
-        internal event Action<Portfolio> PortfolioChanged;
+        internal event Action<FixAccount> AccountChanged;
 
         /// <summary>
         /// New position event
         /// </summary>
-        internal event Action<Position> NewPosition;
+        internal event Action<FixPosition> NewPosition;
 
         /// <summary>
         /// Position changed event
         /// </summary>
-        internal event Action<Position> PositionChanged;
+        internal event Action<FixPosition> PositionChanged;
 
         /// <summary>
         /// New order event
         /// </summary>
-        internal event Action<Order> NewOrder;
+        internal event Action<FixOrder> NewOrder;
 
         /// <summary>
         /// Order changed event
         /// </summary>
-        internal event Action<Order> OrderChanged;
+        internal event Action<FixOrder> OrderChanged;
 
         /// <summary>
         /// New my trade event
         /// </summary>
-        internal event Action<MyTrade> NewMyTrade;
+        internal event Action<FixMyTrade> NewMyTrade;
 
         /// <summary>
         /// New security event
         /// </summary>
-        internal event Action<Security> NewSecurity;
+        internal event Action<FixSecurity> NewSecurity;
 
         /// <summary>
         /// New Trade event
         /// </summary>
-        internal event Action<Trade> NewTrade;
+        internal event Action<FixTrade> NewTrade;
 
         /// <summary>
         /// Trades unsubscribed event
         /// </summary>
-        internal event Action<Security> TradesUnSubscribed;
+        internal event Action<string> TradesUnSubscribed;
 
         /// <summary>
         /// Market depth changed
         /// </summary>
-        internal event Action<MarketDepth> MarketDepthChanged;
+        internal event Action<FixMarketDepth> MarketDepthChanged;
 
         /// <summary>
         /// Market depth unsubscribed
         /// </summary>
-        internal event Action<Security> MarketDepthUnsubscribed;
+        internal event Action<string> MarketDepthUnsubscribed;
 
         /// <summary>
         /// Событие ошибок
         /// </summary>
-        internal event Action<OrderFail> OrderPlaceFailed;
+        internal event Action<FixOrderFail> OrderPlaceFailed;
 
         /// <summary>
         /// Событие ошибок
         /// </summary>
-        internal event Action<OrderFail> OrderCancelFailed;
+        internal event Action<FixOrderFail> OrderCancelFailed;
 
         /// <summary>
         /// Событие ошибок
         /// </summary>
-        internal event Action<OrderFail> OrderModifyFailed;
+        internal event Action<FixOrderFail> OrderModifyFailed;
 
         /// <summary>
         /// Настройки сессии
         /// </summary>
-        private Model.Settings settings;
+        private Model.FixSettings settings;
 
         /// <summary>
         /// Сессия потока
@@ -132,26 +129,26 @@ namespace Intelligences.FixProtocol.Client
 
         private readonly IDialectClient client;
 
-        public FIXClient(Model.Settings settings)
+        public FIXClient(Model.FixSettings settings)
         {
             this.settings = settings;
 
-            Dialect dialect = this.settings.GetDialect();
+            FixDialect dialect = this.settings.GetDialect();
 
             switch(dialect)
             {
-                case Dialect.Exante:
+                case FixDialect.Exante:
                     this.client = new ExanteDialect(settings);
                     break;
-                case Dialect.GainCapital:
+                case FixDialect.GainCapital:
                     this.client = new GainCapitalDialect(settings);
                     break;
             }
 
             this.client.NewPosition += this.newPosition;
             this.client.PositionChanged += this.positionChanged;
-            this.client.NewPortfolio += this.newPortfolio;
-            this.client.PortfolioChanged += this.portfolioChanged;
+            this.client.NewAccount += this.newAccount;
+            this.client.AccountChanged += this.accountChanged;
             this.client.NewOrder += this.newOrder;
             this.client.OrderChanged += this.orderChanged;
             this.client.NewMyTrade += this.newMyTrade;
@@ -173,9 +170,9 @@ namespace Intelligences.FixProtocol.Client
 
         public void FromAdmin(QuickFix.Message message, SessionID sessionID)
         {
-            Dialect dialect = this.settings.GetDialect();
+            FixDialect dialect = this.settings.GetDialect();
 
-            if (dialect == Dialect.GainCapital)
+            if (dialect == FixDialect.GainCapital)
             {
                 if (message.Header.GetField(Tags.MsgType) == MsgType.LOGON)
                 {
@@ -191,7 +188,7 @@ namespace Intelligences.FixProtocol.Client
         /// <param name="sessionID"></param>
         public void FromApp(QuickFix.Message message, SessionID sessionID)
         {
-            if (this.settings.GetDialect() == Dialect.Exante)
+            if (this.settings.GetDialect() == FixDialect.Exante)
             {
                 MsgType msgType = new MsgType();
                 message.Header.GetField(msgType);
@@ -215,11 +212,6 @@ namespace Intelligences.FixProtocol.Client
             {
                 throw new UnsupportedMessageType();
             }
-        }
-
-        internal void CreateSecurity(SecurityData securityData)
-        {
-            this.client.CreateSecurity(securityData);
         }
 
         public void OnCreate(SessionID sessionID)
@@ -263,8 +255,8 @@ namespace Intelligences.FixProtocol.Client
         {
             this.client.PreOutputMessageAction(message);
 
-            Dialect dialect = this.settings.GetDialect();
-            if (dialect == Dialect.GainCapital)
+            FixDialect dialect = this.settings.GetDialect();
+            if (dialect == FixDialect.GainCapital)
             {
                 if (message.Header.GetField(Tags.MsgType) == MsgType.LOGON)
                 {
@@ -299,10 +291,10 @@ namespace Intelligences.FixProtocol.Client
         {
             switch (this.settings.GetDialect())
             {
-                case Dialect.GainCapital:
+                case FixDialect.GainCapital:
                     this.onGainRequest(message);
                     break;
-                case Dialect.Exante:
+                case FixDialect.Exante:
                     this.client.ParseSecuritiesList(message);
                     break;
             }
@@ -389,20 +381,31 @@ namespace Intelligences.FixProtocol.Client
         /// </summary>
         internal void FindSecurities(SecurityFilter securityFilter)
         {
-            this.findSecuritiesRequest(securityFilter);
+            this.client.FindSecurities(securityFilter);
         }
 
         /// <summary>
         /// Load all securities
         /// </summary>
-        internal void LoadAllSecurities()
+        internal void RequestSecurities()
         {
-            this.findSecuritiesRequest(new SecurityFilter());
+            this.client.RequestSecurities();
         }
 
-        private void findSecuritiesRequest(SecurityFilter securityFilter)
+        /// <summary>
+        /// Load account summary info
+        /// </summary>
+        internal void AccountSummaryRequest()
         {
-            this.client.FindSecurities(securityFilter);
+            this.client.AccountSummaryRequest();
+        }
+
+        /// <summary>
+        /// Load orders info
+        /// </summary>
+        internal void OrderMassStatusRequest()
+        {
+            this.client.OrderMassStatusRequest();
         }
 
         /// <summary>
@@ -432,7 +435,7 @@ namespace Intelligences.FixProtocol.Client
                 //case Dialect.GainCapital:
                 //    this.client.OrderCancelReject(message);
                 //    break;
-                case Dialect.Exante:
+                case FixDialect.Exante:
                     this.client.OrderCancelReject(message);
                     break;
             }
@@ -445,7 +448,7 @@ namespace Intelligences.FixProtocol.Client
                 //case Dialect.GainCapital:
                 //    this.OrderCancelRejectForGain(message);
                 //    break;
-                case Dialect.Exante:
+                case FixDialect.Exante:
                     this.client.OrderCancelReplaceRequest(message);
                     break;
             }
@@ -468,26 +471,26 @@ namespace Intelligences.FixProtocol.Client
         /// <summary>
         /// Subscribe on MarketDepth
         /// </summary>
-        /// <param name="security">Security</param>
-        internal void SubscribeMarketDepth(Security security)
+        /// <param name="securityId">Security</param>
+        internal void SubscribeMarketDepth(string securityId)
         {
-            this.client.SubscribeMarketDepth(security);
+            this.client.SubscribeMarketDepth(securityId);
         }
 
         /// <summary>
         /// Отписка от стакана
         /// </summary>
-        /// <param name="security"></param>
-        internal void UnsubscribeMarketDepth(Security security)
+        /// <param name="securityId"></param>
+        internal void UnsubscribeMarketDepth(string securityId)
         {
-            this.client.SubscribeMarketDepth(security);
+            this.client.SubscribeMarketDepth(securityId);
         }
 
         /// <summary>
         /// Place new order on the exchange
         /// </summary>
         /// <param name="order">New order</param>
-        internal void PlaceOrder(Order order)
+        internal void PlaceOrder(FixOrder order)
         {
             this.client.PlaceOrder(order);
         }
@@ -495,8 +498,8 @@ namespace Intelligences.FixProtocol.Client
         /// <summary>
         /// Modify order
         /// </summary>
-        /// <param name="order">Order <see cref="Order"/></param>
-        internal void ModifyOrder(Order order)
+        /// <param name="order">Order <see cref="FixOrder"/></param>
+        internal void ModifyOrder(FixOrder order)
         {
             this.client.ModifyOrder(order);
         }
@@ -504,8 +507,8 @@ namespace Intelligences.FixProtocol.Client
         /// <summary>
         /// Cancel order
         /// </summary>
-        /// <param name="order">Order <see cref="Order"/></param>
-        internal void CancelOrder(Order order)
+        /// <param name="order">Order <see cref="FixOrder"/></param>
+        internal void CancelOrder(FixOrder order)
         {
             this.client.CancelOrder(order);
         }
@@ -513,19 +516,19 @@ namespace Intelligences.FixProtocol.Client
         /// <summary>
         /// Subscribe Trades
         /// </summary>
-        /// <param name="security">Security <see cref="Security"/></param>
-        internal void SubscribeTrades(Security security)
+        /// <param name="securityId">Security identifier</param>
+        internal void SubscribeTrades(string securityId)
         {
-            this.client.SubscribeTrades(security);
+            this.client.SubscribeTrades(securityId);
         }
 
         /// <summary>
         /// UnSubscribe Trades
         /// </summary>
-        /// <param name="security">Security <see cref="Security"/></param>
-        internal void UnSubscribeTrades(Security security)
+        /// <param name="securityId">Security identifier</param>
+        internal void UnSubscribeTrades(string securityId)
         {
-            this.client.UnSubscribeTrades(security);
+            this.client.UnSubscribeTrades(securityId);
         }
 
         private void ordersUpdateRequest()
@@ -563,73 +566,67 @@ namespace Intelligences.FixProtocol.Client
             );
         }
 
-        private void newPosition(Position position)
+        private void newPosition(FixPosition position)
         {
             this.NewPosition?.Invoke(position);
         }
 
-        private void positionChanged(Position position)
+        private void positionChanged(FixPosition position)
         {
             this.PositionChanged?.Invoke(position);
         }
 
-        private void newPortfolio(Portfolio portfolio)
+        private void newAccount(FixAccount portfolio)
         {
-            this.NewPortfolio?.Invoke(portfolio);
+            this.NewAccount?.Invoke(portfolio);
         }
 
-        private void portfolioChanged(Portfolio portfolio)
+        private void accountChanged(FixAccount portfolio)
         {
-            this.PortfolioChanged?.Invoke(portfolio);
+            this.AccountChanged?.Invoke(portfolio);
         }
 
-        private void newOrder(Order order)
+        private void newOrder(FixOrder order)
         {
             this.NewOrder?.Invoke(order);
         }
 
-        private void orderChanged(Order order)
+        private void orderChanged(FixOrder order)
         {
             this.OrderChanged?.Invoke(order);
         }
 
-        private void newMyTrade(MyTrade myTrade)
+        private void newMyTrade(FixMyTrade myTrade)
         {
-            Task.Factory.StartNew(() =>
-            {
-                Thread.Sleep(1500);
-                this.client.AccountSummaryRequest();
-            });
-
             this.NewMyTrade?.Invoke(myTrade);
         }
 
-        private void newSecurity(Security security)
+        private void newSecurity(FixSecurity security)
         {
             this.NewSecurity?.Invoke(security);
         }
 
-        private void newTrade(Trade trade)
+        private void newTrade(FixTrade trade)
         {
             this.NewTrade?.Invoke(trade);
         }
 
-        private void tradesUnSubscribed(Security security)
+        private void tradesUnSubscribed(string securityId)
         {
-            this.TradesUnSubscribed?.Invoke(security);
+            this.TradesUnSubscribed?.Invoke(securityId);
         }
 
-        private void marketDepthChanged(MarketDepth marketDepth)
+        private void marketDepthChanged(FixMarketDepth marketDepth)
         {
             this.MarketDepthChanged?.Invoke(marketDepth);
         }
 
-        private void marketDepthUnsubscribed(Security security)
+        private void marketDepthUnsubscribed(string securityId)
         {
-            this.MarketDepthUnsubscribed?.Invoke(security);
+            this.MarketDepthUnsubscribed?.Invoke(securityId);
         }
 
-        private void orderPlaceFailed(OrderFail orderFail)
+        private void orderPlaceFailed(FixOrderFail orderFail)
         {
             this.OrderPlaceFailed.Invoke(orderFail);
         }

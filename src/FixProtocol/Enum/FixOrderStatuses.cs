@@ -3,7 +3,7 @@
     /// <summary>
     /// Список статусов заявки
     /// </summary>
-    internal enum OrderStatuses
+    internal enum FixOrderStatuses
     {
         /// <summary>
         /// Нет статуса (заявка еще не была передана в торговую систему)

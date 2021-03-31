@@ -6,76 +6,75 @@ using MarketDataRequestReject = QuickFix.FIX44.MarketDataRequestReject;
 using System;
 using SecurityList = QuickFix.FIX44.SecurityList;
 using QuickFix;
-using Intelligences.FixProtocol.DTO;
 
 namespace Intelligences.FixProtocol.Client.Dialects
 {
     internal interface IDialectClient
     {
         /// <summary>
-        /// New portfolio event
+        /// New Account
         /// </summary>
-        event Action<Portfolio> NewPortfolio;
+        event Action<FixAccount> NewAccount;
 
         /// <summary>
-        /// Portfolio changed event
+        /// Account changed
         /// </summary>
-        event Action<Portfolio> PortfolioChanged;
+        event Action<FixAccount> AccountChanged;
 
         /// <summary>
         /// New position event
         /// </summary>
-        event Action<Position> NewPosition;
+        event Action<FixPosition> NewPosition;
 
         /// <summary>
         /// Position changed event
         /// </summary>
-        event Action<Position> PositionChanged;
+        event Action<FixPosition> PositionChanged;
 
         /// <summary>
         /// New order event
         /// </summary>
-        event Action<Order> NewOrder;
+        event Action<FixOrder> NewOrder;
 
         /// <summary>
         /// Order changed event
         /// </summary>
-        event Action<Order> OrderChanged;
+        event Action<FixOrder> OrderChanged;
 
         /// <summary>
         /// Order place failed event
         /// </summary>
-        event Action<OrderFail> OrderPlaceFailed;
+        event Action<FixOrderFail> OrderPlaceFailed;
 
         /// <summary>
         /// New my trade event
         /// </summary>
-        event Action<MyTrade> NewMyTrade;
+        event Action<FixMyTrade> NewMyTrade;
 
         /// <summary>
         /// New security event
         /// </summary>
-        event Action<Security> NewSecurity;
+        event Action<FixSecurity> NewSecurity;
 
         /// <summary>
         /// New Trade event
         /// </summary>
-        event Action<Trade> NewTrade;
+        event Action<FixTrade> NewTrade;
 
         /// <summary>
         /// Trades unsubscribed event
         /// </summary>
-        event Action<Security> TradesUnSubscribed;
+        event Action<string> TradesUnSubscribed;
 
         /// <summary>
         /// Market depth changed
         /// </summary>
-        event Action<MarketDepth> MarketDepthChanged;
+        event Action<FixMarketDepth> MarketDepthChanged;
 
         /// <summary>
         /// Market depth unsubscribed
         /// </summary>
-        event Action<Security> MarketDepthUnsubscribed;
+        event Action<string> MarketDepthUnsubscribed;
 
         /// <summary>
         /// Set session
@@ -85,20 +84,20 @@ namespace Intelligences.FixProtocol.Client.Dialects
         /// <summary>
         /// Subscribe on market depth
         /// </summary>
-        /// <param name="security">Security</param>
-        void SubscribeMarketDepth(Security security);
+        /// <param name="securityId">Security</param>
+        void SubscribeMarketDepth(string securityId);
 
         /// <summary>
         /// Unsubscribe from Market Depth
         /// </summary>
-        /// <param name="security"></param>
-        void UnsubscribeMarketDepth(Security security);
+        /// <param name="securityId"></param>
+        void UnsubscribeMarketDepth(string securityId);
 
         /// <summary>
         /// Place new order on the exchange
         /// </summary>
         /// <param name="order">New order</param>
-        void PlaceOrder(Order order);
+        void PlaceOrder(FixOrder order);
 
         /// <summary>
         /// Find securities on the exchange
@@ -106,31 +105,35 @@ namespace Intelligences.FixProtocol.Client.Dialects
         /// <param name="securityFilter">Security filter <see cref="SecurityFilter"/></param>
         void FindSecurities(SecurityFilter securityFilter);
 
-        void CreateSecurity(SecurityData securityData);
+        /// <summary>
+        /// Request list of all securities
+        /// </summary>
+        /// <remarks>If cache enabled, load from cache and async reload</remarks>
+        void RequestSecurities();
 
         /// <summary>
         /// Subscribe Trades
         /// </summary>
-        /// <param name="security">Security <see cref="Security"/></param>
-        void SubscribeTrades(Security security);
+        /// <param name="securityId">Security <see cref="FixSecurity"/></param>
+        void SubscribeTrades(string securityId);
 
         /// <summary>
         /// UnSubscribe Trades
         /// </summary>
-        /// <param name="security">Security <see cref="Security"/></param>
-        void UnSubscribeTrades(Security security);
+        /// <param name="security">Security <see cref="FixSecurity"/></param>
+        void UnSubscribeTrades(string securityId);
 
         /// <summary>
         /// Modify order
         /// </summary>
-        /// <param name="order">Order <see cref="Order"/></param>
-        void ModifyOrder(Order order);
+        /// <param name="order">Order <see cref="FixOrder"/></param>
+        void ModifyOrder(FixOrder order);
 
         /// <summary>
         /// Cancel order
         /// </summary>
-        /// <param name="order">Order <see cref="Order"/></param>
-        void CancelOrder(Order order);
+        /// <param name="order">Order <see cref="FixOrder"/></param>
+        void CancelOrder(FixOrder order);
 
         /// <summary>
         /// Request to get orders

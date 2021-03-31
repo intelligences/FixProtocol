@@ -37,19 +37,19 @@ namespace Intelligences.FixProtocol
         /// <summary>
         /// New security event
         /// </summary>
-        public event Action<Security> NewSecurity;
+        public event Action<FixSecurity> NewSecurity;
 
         /// <summary>
         /// On market depth changed event
         /// </summary>
-        public event Action<MarketDepth> MarketDepthChanged;
+        public event Action<FixMarketDepth> MarketDepthChanged;
 
         /// <summary>
         /// FIX connection service
         /// </summary>
         private readonly FASTClient fastService;
 
-        public FASTConnection(Settings settings)
+        public FASTConnection(FixSettings settings)
         {
             this.fastService = new FASTClient(settings);
 
@@ -80,15 +80,19 @@ namespace Intelligences.FixProtocol
         }
 
         /// <summary>
-        /// Подписаться на изменения стакана
+        /// Subscribe to market depth
         /// </summary>
-        /// <param name="security">Инструмент <see cref="Security"/></param>
-        public void SubscribeMarketDepth(Security security)
+        /// <param name="securityId">Security Identifier</param>
+        public void SubscribeMarketDepth(string securityId)
         {
-            this.fastService.SubscribeMarketDepth(security);
+            this.fastService.SubscribeMarketDepth(securityId);
         }
 
-        public void UnsubscribeMarketDepth(Security security)
+        /// <summary>
+        /// UnSubscribe from market depth
+        /// </summary>
+        /// <param name="securityId">Security Identifier</param>
+        public void UnsubscribeMarketDepth(string securityId)
         {
             //this.fastService.UnsubscribeMarketDepth(security);
         }
@@ -128,7 +132,7 @@ namespace Intelligences.FixProtocol
         /// 
         /// </summary>
         /// <param name="marketDepth"></param>
-        private void marketDepthChanged(MarketDepth marketDepth)
+        private void marketDepthChanged(FixMarketDepth marketDepth)
         {
             try
             {

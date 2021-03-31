@@ -44,7 +44,7 @@ namespace Intelligences.FixProtocol.Client
         /// <summary>
         /// Событие изменения стакана
         /// </summary>
-        internal event Action<MarketDepth> MarketDepthChanged;
+        internal event Action<FixMarketDepth> MarketDepthChanged;
 
         /// <summary>
         /// FAST prorocol
@@ -69,7 +69,7 @@ namespace Intelligences.FixProtocol.Client
         /// <summary>
         /// Settings
         /// </summary>
-        private readonly Settings settings;
+        private readonly FixSettings settings;
 
         /// <summary>
         /// Fast session
@@ -81,7 +81,7 @@ namespace Intelligences.FixProtocol.Client
         /// </summary>
         private FastClient fastClient;
 
-        public FASTClient(Settings settings)
+        public FASTClient(FixSettings settings)
         {
             this.settings = settings;
 
@@ -178,10 +178,10 @@ namespace Intelligences.FixProtocol.Client
         }
 
         /// <summary>
-        /// Подписаться на стакан
+        /// Subscribe to market depth
         /// </summary>
-        /// <param name="security"></param>
-        public void SubscribeMarketDepth(Security security)
+        /// <param name="securityId">Security Identifier</param>
+        public void SubscribeMarketDepth(string securityId)
         {
 
         }

@@ -2,13 +2,13 @@
 
 namespace Intelligences.FixProtocol.Model
 {
-    public class Quote
+    public class FixQuote
     {
         private decimal price;
         private decimal volume;
         private Direction direction;
 
-        public Quote(decimal price, decimal volume, Direction direction)
+        public FixQuote(decimal price, decimal volume, Direction direction)
         {
             this.price = price;
             this.volume = volume;
