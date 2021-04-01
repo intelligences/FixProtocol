@@ -166,7 +166,11 @@ namespace Intelligences.FixProtocol.Client
         /// </summary>
         public void Dispose()
         {
+            this.portfolioUpdateTimer.Dispose();
+            this.ordersUpdateTimer.Dispose();
+
             this.session.Logout("user requested");
+            this.session.Dispose();
         }
 
         public void FromAdmin(QuickFix.Message message, SessionID sessionID)

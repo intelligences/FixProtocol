@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Intelligences.FixProtocol.Enum;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -14,6 +15,11 @@ namespace Intelligences.FixProtocol.Model
         /// </summary>
         public string SecurityId { get; private set; }
 
+        /// <summary>
+        /// Update type
+        /// </summary>
+        public FixMarketDataUpdateType UpdateType { get; internal set; } = FixMarketDataUpdateType.FullRefresh;
+
         public List<FixQuote> asks = new List<FixQuote>();
 
         /// <summary>
@@ -27,7 +33,7 @@ namespace Intelligences.FixProtocol.Model
             }
             set
             {
-                this.asks = asks.OrderByDescending(x => x.Price).ToList();
+                this.asks = value.OrderByDescending(x => x.Price).ToList();
 
                 this.BestAsk = this.asks.LastOrDefault();
             }

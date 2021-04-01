@@ -306,7 +306,8 @@ namespace Intelligences.FixProtocol.Client.Dialects
             {
                 this.loadSecuritiesFromCache();
 
-                Task.Run(() => {
+                Task.Run(() =>
+                {
                     this.requestAllSecurities("update");
                 });
             }
