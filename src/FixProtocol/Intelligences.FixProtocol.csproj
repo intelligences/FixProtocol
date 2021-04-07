@@ -5,7 +5,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <AssemblyName>Intelligences.FixProtocol</AssemblyName>
     <RootNamespace>Intelligences.FixProtocol</RootNamespace>
-    <Version>1.0.4.21</Version>
+    <Version>1.0.4.22</Version>
     <Description>Fix protocol implimentation library.
 
 Supported brokers:
@@ -26,7 +26,7 @@ Supported brokers:
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="3.3.1">
+    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="3.3.2">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

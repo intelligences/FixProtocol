@@ -44,5 +44,10 @@
         /// Order rejected
         /// </summary>
         Rejected,
+
+        /// <summary>
+        /// Order Suspended
+        /// </summary>
+        Suspended,
     }
 }

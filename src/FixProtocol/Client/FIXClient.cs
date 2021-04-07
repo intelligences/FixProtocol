@@ -166,8 +166,8 @@ namespace Intelligences.FixProtocol.Client
         /// </summary>
         public void Dispose()
         {
-            this.portfolioUpdateTimer.Dispose();
-            this.ordersUpdateTimer.Dispose();
+            this.portfolioUpdateTimer?.Dispose();
+            this.ordersUpdateTimer?.Dispose();
 
             this.session.Logout("user requested");
             this.session.Dispose();

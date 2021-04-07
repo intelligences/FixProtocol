@@ -159,7 +159,8 @@ namespace Intelligences.FixProtocol
 
         public static FixOrderState ToOrderState(this OrdStatus ordStatus)
         {
-            switch (ordStatus.getValue())
+            var value = ordStatus.getValue();
+            switch (value)
             {
                 case OrdStatus.PENDING_NEW:
                     return FixOrderState.PendingRegistration;
@@ -175,9 +176,11 @@ namespace Intelligences.FixProtocol
                     return FixOrderState.Canceled;
                 case OrdStatus.REJECTED:
                     return FixOrderState.Rejected;
+                case OrdStatus.SUSPENDED:
+                    return FixOrderState.Suspended;
 
                 default:
-                    throw new ArgumentException("Invalid order type for fix protocol");
+                    throw new ArgumentException(String.Format("Invalid order type: {0} for fix protocol", value));
             }
         }
 
