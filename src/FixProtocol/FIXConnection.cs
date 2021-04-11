@@ -124,7 +124,11 @@ namespace Intelligences.FixProtocol
         /// </summary>
         private SocketInitiator socketInitiator;
 
-        public FIXConnection(Model.FixSettings settings)
+        /// <summary>
+        /// Ctor.
+        /// </summary>
+        /// <param name="settings"></param>
+        public FIXConnection(FixSettings settings)
         {
             SessionSettings sessionSettings = SessionSettingsFactory.Create(settings);
 

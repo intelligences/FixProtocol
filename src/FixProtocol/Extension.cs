@@ -162,23 +162,36 @@ namespace Intelligences.FixProtocol
             var value = ordStatus.getValue();
             switch (value)
             {
-                case OrdStatus.PENDING_NEW:
-                    return FixOrderState.PendingRegistration;
                 case OrdStatus.NEW:
                     return FixOrderState.New;
-                case OrdStatus.PARTIALLY_FILLED:
-                    return FixOrderState.PartialFilled;
-                case OrdStatus.FILLED:
-                    return FixOrderState.Filled;
+                case OrdStatus.REPLACED:
+                    return FixOrderState.Replaced;
+                case OrdStatus.PENDING_REPLACE:
+                    return FixOrderState.PendingReplace;
+                case OrdStatus.ACCEPTED_FOR_BIDDING:
+                    return FixOrderState.AcceptedForBinding;
+                case OrdStatus.EXPIRED:
+                    return FixOrderState.Expired;
+                case OrdStatus.CALCULATED:
+                    return FixOrderState.Calculated;
+                case OrdStatus.PENDING_NEW:
+                    return FixOrderState.PendingRegistration;
+                case OrdStatus.SUSPENDED:
+                    return FixOrderState.Suspended;
+                case OrdStatus.REJECTED:
+                    return FixOrderState.Rejected;
+                case OrdStatus.STOPPED:
+                    return FixOrderState.Stopped;
                 case OrdStatus.PENDING_CANCEL:
                     return FixOrderState.PendingCancel;
                 case OrdStatus.CANCELED:
                     return FixOrderState.Canceled;
-                case OrdStatus.REJECTED:
-                    return FixOrderState.Rejected;
-                case OrdStatus.SUSPENDED:
-                    return FixOrderState.Suspended;
-
+                case OrdStatus.DONE_FOR_DAY:
+                    return FixOrderState.DoneForDay;
+                case OrdStatus.FILLED:
+                    return FixOrderState.Filled;
+                case OrdStatus.PARTIALLY_FILLED:
+                    return FixOrderState.PartialFilled;
                 default:
                     throw new ArgumentException(String.Format("Invalid order type: {0} for fix protocol", value));
             }
@@ -203,25 +216,31 @@ namespace Intelligences.FixProtocol
 
         public static char ToFixTimeInForce(this TimeInForceEnum timeInForce)
         {
-            char type = TimeInForce.GOOD_TILL_CANCEL;
-
             switch (timeInForce)
             {
-                case TimeInForceEnum.GoodTillCancel:
-                    type = TimeInForce.GOOD_TILL_CANCEL;
-                    break;
                 case TimeInForceEnum.Day:
-                    type = TimeInForce.DAY;
-                    break;
+                    return TimeInForce.DAY;
+                case TimeInForceEnum.GoodTillCancel:
+                    return TimeInForce.GOOD_TILL_CANCEL;
+                case TimeInForceEnum.AtTheOpening:
+                    return TimeInForce.AT_THE_OPENING;
+                case TimeInForceEnum.ImmediateOrCancel:
+                    return TimeInForce.IMMEDIATE_OR_CANCEL;
+                case TimeInForceEnum.GoodTillCrossing:
+                    return TimeInForce.GOOD_TILL_CROSSING;
+                case TimeInForceEnum.GoodTillDate:
+                    return TimeInForce.GOOD_TILL_DATE;
                 case TimeInForceEnum.FillOrKill:
-                    type = TimeInForce.FILL_OR_KILL;
-                    break;
+                    return TimeInForce.FILL_OR_KILL;
                 case TimeInForceEnum.AtTheClose:
-                    type = TimeInForce.AT_THE_CLOSE;
-                    break;
+                    return TimeInForce.AT_THE_CLOSE;
+                case TimeInForceEnum.GoodThroughCrossing:
+                    return TimeInForce.GOOD_THROUGH_CROSSING;
+                case TimeInForceEnum.AtCrossing:
+                    return TimeInForce.AT_CROSSING;
+                default:
+                    throw new InvalidCastException("Can't convert type: " + timeInForce);
             }
-
-            return type;
         }
     }
 }

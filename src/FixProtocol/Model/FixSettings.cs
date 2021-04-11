@@ -114,7 +114,7 @@ namespace Intelligences.FixProtocol.Model
                     throw new FixInvalidSettingsException(Resource.GainCapitalRequiredFieldsNotExists);
                 }
             }
-            else if (this.dialect == FixDialect.Exante)
+            else if (this.dialect == FixDialect.Exante || this.dialect == FixDialect.Gozo)
             {
                 List<string> requiredFields = new List<string>(new string[] { "Password" });
 

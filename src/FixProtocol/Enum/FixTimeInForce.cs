@@ -4,7 +4,13 @@
     {
         Day,
         GoodTillCancel,
+        AtTheOpening,
+        ImmediateOrCancel,
+        GoodTillCrossing,
+        GoodTillDate,
         FillOrKill,
         AtTheClose,
+        GoodThroughCrossing,
+        AtCrossing,
     }
 }

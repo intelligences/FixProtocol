@@ -49,5 +49,14 @@
         /// Order Suspended
         /// </summary>
         Suspended,
+
+        PendingCancelReplace,
+        Replaced,
+        PendingReplace,
+        AcceptedForBinding,
+        Expired,
+        Calculated,
+        Stopped,
+        DoneForDay,
     }
 }
