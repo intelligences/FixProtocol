@@ -1,27 +1,24 @@
-﻿using AllocationInstruction = QuickFix.FIX44.AllocationInstruction;
-using ExecutionReport = QuickFix.FIX44.ExecutionReport;
+﻿
 using Intelligences.FixProtocol.Model;
-using MarketDepth = Intelligences.FixProtocol.Model.FixMarketDepth;
 using MarketDataSnapshotFullRefresh = QuickFix.FIX44.MarketDataSnapshotFullRefresh;
 using MarketDataRequestReject = QuickFix.FIX44.MarketDataRequestReject;
+using AllocationInstruction = QuickFix.FIX44.AllocationInstruction;
+using ExecutionReport = QuickFix.FIX44.ExecutionReport;
 using QuickFix.Fields;
 using QuickFix;
-using FixSettings = Intelligences.FixProtocol.Model.FixSettings;
-using FixSecurity = Intelligences.FixProtocol.Model.FixSecurity;
 using SecurityList = QuickFix.FIX44.SecurityList;
 using System;
 using System.Collections.Generic;
 using Intelligences.FixProtocol.Enum;
-using TimeInForce = QuickFix.Fields.TimeInForce;
 using System.Globalization;
 using Intelligences.FixProtocol.Filter;
 using Intelligences.FixProtocol.Fields;
-using Tags = QuickFix.Fields.Tags;
 using Intelligences.FixProtocol.Exceptions;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
 using System.Linq;
 using Intelligences.FixProtocol.Service;
+using Tags = QuickFix.Fields.Tags;
 
 namespace Intelligences.FixProtocol.Client.Dialects
 {
@@ -98,7 +95,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
         /// <summary>
         /// Market depth changed
         /// </summary>
-        public event Action<MarketDepth> MarketDepthChanged;
+        public event Action<FixMarketDepth> MarketDepthChanged;
 
         /// <summary>
         /// Market depth unsubscribed
@@ -128,7 +125,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
         /// <summary>
         /// List of market depths
         /// </summary>
-        private readonly Dictionary<string, MarketDepth> marketDepths = new Dictionary<string, MarketDepth>();
+        private readonly Dictionary<string, FixMarketDepth> marketDepths = new Dictionary<string, FixMarketDepth>();
 
         /// <summary>
         /// List of subscriptions on new trades
@@ -196,24 +193,6 @@ namespace Intelligences.FixProtocol.Client.Dialects
             marketDataRequest.AddGroup(typesGroup);
             typesGroup.Set(new MDEntryType(MDEntryType.TRADE));
             marketDataRequest.AddGroup(typesGroup);
-
-            #region temporarilyDeleted
-            //typesGroup.Set(new MDEntryType(MDEntryType.OPENING_PRICE));
-            //marketDataRequest.AddGroup(typesGroup);
-            //typesGroup.Set(new MDEntryType(MDEntryType.CLOSING_PRICE));
-            //marketDataRequest.AddGroup(typesGroup);
-            //typesGroup.Set(new MDEntryType(MDEntryType.TRADE_VOLUME));
-            //marketDataRequest.AddGroup(typesGroup);
-            //typesGroup.Set(new MDEntryType(MDEntryType.EMPTY_BOOK));
-            //marketDataRequest.AddGroup(typesGroup);
-            //typesGroup.Set(new MDEntryType('x')); // Price limit low
-            //marketDataRequest.AddGroup(typesGroup);
-            //typesGroup.Set(new MDEntryType('y')); // Price limit high
-            //marketDataRequest.AddGroup(typesGroup);
-            //No permissions for option data
-            //typesGroup.Set(new MDEntryType('z')); // Option data 
-            //marketDataRequest.AddGroup(typesGroup);
-            #endregion temporarilyDeleted
 
             QuickFix.FIX44.MarketDataRequest.NoRelatedSymGroup symGroup = new QuickFix.FIX44.MarketDataRequest.NoRelatedSymGroup();
             symGroup.Set(new SecurityIDSource("111"));
@@ -726,7 +705,6 @@ namespace Intelligences.FixProtocol.Client.Dialects
                 DateTime transactTime = transactionTimeField.getValue();
 
                 order = this.findOrder(clientOrderid, orderId);
-
                 DateTime dateTime = message.Header.GetDateTime(52);
 
                 if (order == null)
@@ -1003,14 +981,14 @@ namespace Intelligences.FixProtocol.Client.Dialects
         /// <param name="message">FIX message</param>
         public void ParseMarketDataSnapshotFullRefresh(MarketDataSnapshotFullRefresh message)
         {
-            String mdKey = message.MDReqID.ToString();
+            String securityId = message.MDReqID.ToString();
 
-            if (!this.marketDepths.ContainsKey(mdKey))
+            if (!this.marketDepths.ContainsKey(securityId))
             {
                 return;
             }
 
-            Model.FixMarketDepth marketDepth = this.marketDepths[mdKey];
+            FixMarketDepth marketDepth = this.marketDepths[securityId];
 
             int noMDEntries = message.NoMDEntries.getValue();
             QuickFix.FIX44.MarketDataSnapshotFullRefresh.NoMDEntriesGroup group = new QuickFix.FIX44.MarketDataSnapshotFullRefresh.NoMDEntriesGroup();
@@ -1038,7 +1016,6 @@ namespace Intelligences.FixProtocol.Client.Dialects
 
                 decimal price = mdEntryPx.getValue();
                 decimal volume = mDEntrySize.getValue();
-                string securityId = marketDepth.SecurityId;
 
                 switch (mdEntryType.getValue())
                 {
@@ -1054,30 +1031,6 @@ namespace Intelligences.FixProtocol.Client.Dialects
                             this.NewTrade(new FixTrade(securityId, price, volume, DateTimeOffset.UtcNow));
                         }
                         break;
-
-                        #region TemporaryRemoved2
-                        //case MDEntryType.OPENING_PRICE:
-                        //    Debug.WriteLine(mdEntryPx.getValue());
-                        //    break;
-                        //case MDEntryType.CLOSING_PRICE:
-                        //    Debug.WriteLine(mdEntryPx.getValue());
-                        //    break;
-                        //case MDEntryType.TRADE_VOLUME:
-                        //    Debug.WriteLine(mDEntrySize.getValue());
-                        //    break;
-                        //case MDEntryType.EMPTY_BOOK:
-                        //    Debug.WriteLine(mdEntryPx.getValue());
-                        //    break;
-                        //case 'x':
-                        //    Debug.WriteLine(mdEntryPx.getValue());
-                        //    break;
-                        //case 'y':
-                        //    Debug.WriteLine(mdEntryPx.getValue());
-                        //    break;
-                        //case 'z':
-                        //    Debug.WriteLine(mdEntryPx.getValue());
-                        //    break;
-                        #endregion TemporaryRemoved2
                 }
             }
 

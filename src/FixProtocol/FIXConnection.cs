@@ -312,6 +312,7 @@ namespace Intelligences.FixProtocol
                 throw new ArgumentNullException("Order can't be null");
             }
 
+            order.Id = order.Id ?? Guid.NewGuid().ToString();
             order.ClientOrderId = order.ClientOrderId ?? Guid.NewGuid().ToString();
             order.State = FixOrderState.PendingRegistration;
 
