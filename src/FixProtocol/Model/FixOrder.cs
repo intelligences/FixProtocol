@@ -48,12 +48,12 @@ namespace Intelligences.FixProtocol.Model
         /// <summary>
         /// Price
         /// </summary>
-        public decimal Price { get; set; }
+        public decimal? Price { get; set; }
 
         /// <summary>
         /// Stop price, required for STOP, STOP LIMIT.
         /// </summary>
-        public decimal StopPrice { get; set; }
+        public decimal? StopPrice { get; set; }
 
         public DateTimeOffset CreatedAt { get; internal set; }
         public DateTimeOffset? UpdatedAt { get; internal set; }

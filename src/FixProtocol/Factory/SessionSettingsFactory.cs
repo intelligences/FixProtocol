@@ -1,6 +1,7 @@
 ﻿using QuickFix;
 using System;
 using System.Collections.Generic;
+using TimeZoneConverter;
 
 namespace Intelligences.FixProtocol.Factory
 {
@@ -48,7 +49,13 @@ namespace Intelligences.FixProtocol.Factory
 
             foreach(KeyValuePair<string, dynamic> item in settings.GetProperties())
             {
-                if (item.Value is string)
+                if (item.Key == "TimeZone")
+                {
+                    TimeZoneInfo tzi = TZConvert.GetTimeZoneInfo(item.Value);
+
+                    sessionConfig.SetString(item.Key, item.Value);
+                }
+                else if (item.Value is string)
                 {
                     sessionConfig.SetString(item.Key, item.Value);
                 }
@@ -76,6 +83,7 @@ namespace Intelligences.FixProtocol.Factory
             sessionSettings.Set(defaultConfig);
             sessionSettings.Set(sessionConfig);
             sessionSettings.Set(sessionId, defaultConfig);
+
 
             return sessionSettings;
         }

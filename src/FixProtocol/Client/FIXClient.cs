@@ -607,6 +607,11 @@ namespace Intelligences.FixProtocol.Client
 
         private void newMyTrade(FixMyTrade myTrade)
         {
+            System.Threading.Tasks.Task.Run(() => {
+                Thread.Sleep(1500);
+                this.client.AccountSummaryRequest();
+            });
+
             this.NewMyTrade?.Invoke(myTrade);
         }
 

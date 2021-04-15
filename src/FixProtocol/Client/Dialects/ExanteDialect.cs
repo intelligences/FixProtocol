@@ -607,8 +607,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
             {
                 this.NewPosition(position);
             }
-
-            if (isNewPosition)
+            else
             {
                 this.PositionChanged(position);
             }
@@ -751,7 +750,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
                         );
                     }
 
-                    order.ClientOrderId = clientOrderid;
+                    order.Id = Guid.NewGuid().ToString();
                     order.State = FixOrderState.PendingRegistration;
                 }
 
@@ -787,12 +786,12 @@ namespace Intelligences.FixProtocol.Client.Dialects
                 }
                 else
                 {
-                    if (orderState == FixOrderState.PartialFilled || orderState == FixOrderState.Filled)
+                    if(new[] { FixOrderState.PartialFilled, FixOrderState.Filled }.Contains(orderState))
                     {
                         this.NewMyTrade(new FixMyTrade(new FixTrade(securityId, lastPrice, lastQuantity, dateTime), order));
                     }
 
-                    if (orderState == FixOrderState.Filled || orderState == FixOrderState.Rejected || orderState == FixOrderState.Canceled)
+                    if (new[] { FixOrderState.Filled, FixOrderState.Rejected, FixOrderState.Canceled }.Contains(orderState))
                     {
                         this.orders.TryRemove(orderId, out _);
                     }
@@ -1087,8 +1086,28 @@ namespace Intelligences.FixProtocol.Client.Dialects
 
                     message.GetField(text);
                     message.GetField(cxlRejReason);
+                    message.GetField(cxlRejReason);
 
-                    this.OrderPlaceFailed(new FixOrderFail(order, new OrderException(text.ToString())));
+
+                    this.OrderCancelFailed(new FixOrderFail(order, new OrderException(text.ToString())));
+
+                    if (message.IsSetOrdStatus())
+                    {
+                        OrdStatus ordStatus = new OrdStatus();
+
+                        message.GetField(ordStatus);
+
+                        FixOrderState state = ordStatus.ToOrderState();
+
+                        if (new[] { FixOrderState.Filled, FixOrderState.Rejected, FixOrderState.Canceled }.Contains(state))
+                        {
+                            this.orders.TryRemove(orderId, out _);
+                        }
+
+                        order.State = state;
+
+                        this.OrderChanged(order);
+                    }
                 }
             }
         }
@@ -1185,16 +1204,16 @@ namespace Intelligences.FixProtocol.Client.Dialects
 
             if (order.Type == FixOrderType.Limit)
             {
-                newFixOrder.SetField(new Price(order.Price));
+                newFixOrder.SetField(new Price(order.Price.Value));
             }
             else if (order.Type == FixOrderType.StopLimit)
             {
-                newFixOrder.SetField(new Price(order.Price));
-                newFixOrder.SetField(new StopPx(order.StopPrice));
+                newFixOrder.SetField(new Price(order.Price.Value));
+                newFixOrder.SetField(new StopPx(order.StopPrice.Value));
             }
             else if (order.Type == FixOrderType.StopMarket)
             {
-                newFixOrder.SetField(new StopPx(order.StopPrice));
+                newFixOrder.SetField(new StopPx(order.StopPrice.Value));
             }
 
             newFixOrder.SetField(new TimeInForce(order.TimeInForce.ToFixTimeInForce()));
