@@ -644,6 +644,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
                 Text text = new Text();
                 TransactTime transactionTimeField = new TransactTime();
                 ExanteOrdRejReason exanteOrdRejReason = new ExanteOrdRejReason();
+                ExecType execTypeField = new ExecType();
 
                 message.GetField(clOrdID);
                 message.GetField(orderQty);
@@ -653,6 +654,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
                 message.GetField(ordStatus);
                 message.GetField(ordType);
                 message.GetField(cumQty);
+                message.GetField(execTypeField);
 
                 if (message.IsSetPrice())
                 {
@@ -702,6 +704,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
                 decimal filledQty = cumQty.getValue();
                 decimal filledAvgPrice = avgPxField.getValue();
                 DateTime transactTime = transactionTimeField.getValue();
+                char execType = execTypeField.getValue();
 
                 order = this.findOrder(clientOrderid, orderId);
                 DateTime dateTime = message.Header.GetDateTime(52);
@@ -786,7 +789,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
                 }
                 else
                 {
-                    if(new[] { FixOrderState.PartialFilled, FixOrderState.Filled }.Contains(orderState))
+                    if (execType == ExecType.TRADE)
                     {
                         this.NewMyTrade(new FixMyTrade(new FixTrade(securityId, lastPrice, lastQuantity, dateTime), order));
                     }
