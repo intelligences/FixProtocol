@@ -159,6 +159,7 @@ namespace Intelligences.FixProtocol.Client
             this.client.MarketDepthChanged += this.marketDepthChanged;
             this.client.MarketDepthUnsubscribed += this.marketDepthUnsubscribed;
             this.client.OrderPlaceFailed += this.orderPlaceFailed;
+            this.client.OrderCancelFailed += this.orderCancelFailed;
         }
 
         /// <summary>
@@ -643,6 +644,11 @@ namespace Intelligences.FixProtocol.Client
         private void orderPlaceFailed(FixOrderFail orderFail)
         {
             this.OrderPlaceFailed.Invoke(orderFail);
+        }
+
+        private void orderCancelFailed(FixOrderFail orderFail)
+        {
+            this.OrderCancelFailed.Invoke(orderFail);
         }
     }
 }

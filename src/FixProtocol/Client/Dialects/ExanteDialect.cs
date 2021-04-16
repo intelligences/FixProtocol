@@ -62,7 +62,7 @@ namespace Intelligences.FixProtocol.Client.Dialects
         /// <summary>
         /// Order cancel failed event
         /// </summary>
-        internal event Action<FixOrderFail> OrderCancelFailed;
+        public event Action<FixOrderFail> OrderCancelFailed;
 
         /// <summary>
         /// Order modify failed event
@@ -1090,7 +1090,6 @@ namespace Intelligences.FixProtocol.Client.Dialects
                     message.GetField(text);
                     message.GetField(cxlRejReason);
                     message.GetField(cxlRejReason);
-
 
                     this.OrderCancelFailed(new FixOrderFail(order, new OrderException(text.ToString())));
 

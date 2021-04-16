@@ -44,6 +44,11 @@ namespace Intelligences.FixProtocol.Client.Dialects
         public event Action<FixOrderFail> OrderPlaceFailed;
 
         /// <summary>
+        /// Order place failed event
+        /// </summary>
+        public event Action<FixOrderFail> OrderCancelFailed;
+
+        /// <summary>
         /// New my trade event
         /// </summary>
         public event Action<FixMyTrade> NewMyTrade;
