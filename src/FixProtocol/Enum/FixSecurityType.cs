@@ -5,6 +5,9 @@
     /// </summary>
     public enum FixSecurityType
     {
+        // TODO add more fix types
+        Unknown,
+
         Forex,
 
         Stock,

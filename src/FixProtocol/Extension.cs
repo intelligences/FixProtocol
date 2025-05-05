@@ -85,7 +85,7 @@ namespace Intelligences.FixProtocol
         /// <returns></returns>
         public static FixSecurityType ToSecurityType(this string code)
         {
-            FixSecurityType? type = null;
+            FixSecurityType? type = FixSecurityType.Unknown;
 
             switch (code)
             {
